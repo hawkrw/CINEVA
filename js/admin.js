@@ -1,27 +1,33 @@
 
 /* =========================================
    CINEVA ADMIN DASHBOARD
-   ========================================= */
+   Movies + Series + TMDB + Supabase
+========================================= */
 
-// 1. SUPABASE CONFIGURATION
+/* 1. SUPABASE CONFIGURATION */
 
-const SUPABASE_URL = "https://ciifhscwcaslnkwtgoyp.supabase.co";
+// Keep your existing matching project URL and anon/public key here.
+// Do not use your service-role key in browser JavaScript.
+
+const SUPABASE_URL = "https://exjgejujfxejjlbfizgz.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4amdlanVqZnhlampsYmZpemd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MTQzMTQsImV4cCI6MjA5NDA5MDMxNH0.CWUYLk4qJfriIYXWScB7wcHHVTCuz0SGDhWUV3tMR1Y";
-
 
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_ANON_KEY
 );
 
-// 2. ELEMENTS
+const POSTER_BUCKET = "cineva-posters";
+const VIDEO_BUCKET = "cineva-videos";
+const TMDB_FUNCTION = "tmdb-api";
+
+/* 2. ELEMENTS */
 
 const loginPanel = document.getElementById("loginPanel");
+const loginForm = document.getElementById("loginForm");
 const dashboardPanel = document.getElementById("dashboardPanel");
 
-const loginForm = document.getElementById("loginForm");
 const titleForm = document.getElementById("titleForm");
-
 const loginMessage = document.getElementById("loginMessage");
 const uploadMessage = document.getElementById("uploadMessage");
 
@@ -29,353 +35,26 @@ const adminTitles = document.getElementById("adminTitles");
 const saveTitleBtn = document.getElementById("saveTitleBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 
-document.getElementById("footerYear").textContent =
-  new Date().getFullYear();
-
-
-// 3. CONFIGURATION
-
-const POSTER_BUCKET = "cineva-posters";
-const VIDEO_BUCKET = "cineva-videos";
+const footerYear = document.getElementById("footerYear");
 
 let currentAdmin = null;
+let allAdminContent = [];
 
+if (footerYear) {
+  footerYear.textContent = new Date().getFullYear();
+}
 
-// 4. MESSAGE HELPER
+/* 3. HELPERS */
 
-function showMessage(element, message, success = false) {
+function showMessage(element, message, type = "info") {
+  if (!element) return;
+
   element.textContent = message;
-  element.style.color = success ? "#35d07f" : "#ff6b6b";
+  element.className = `form-message ${type}`;
 }
 
-
-// 5. CHECK ADMIN ROLE
-
-async function checkAdmin() {
-  const { data: { session }, error } =
-    await supabaseClient.auth.getSession();
-
-  if (error || !session) {
-    showLogin();
-    return;
-  }
-
-  const { data: { user } } =
-    await supabaseClient.auth.getUser();
-
-  if (!user || user.app_metadata?.role !== "admin") {
-    await supabaseClient.auth.signOut();
-    showLogin();
-    showMessage(
-      loginMessage,
-      "Access denied. Admin permission is required."
-    );
-    return;
-  }
-
-  currentAdmin = user;
-  showDashboard();
-}
-
-
-// 6. SHOW LOGIN
-
-function showLogin() {
-  loginPanel.hidden = false;
-  dashboardPanel.hidden = true;
-}
-
-
-// 7. SHOW DASHBOARD
-
-function showDashboard() {
-  loginPanel.hidden = true;
-  dashboardPanel.hidden = false;
-
-  loadAdminTitles();
-}
-
-
-// 8. ADMIN LOGIN
-
-loginForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  showMessage(loginMessage, "Signing in...");
-
-  const email = document.getElementById("adminEmail").value.trim();
-  const password = document.getElementById("adminPassword").value;
-
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password
-  });
-
-  if (error) {
-    showMessage(loginMessage, error.message);
-    return;
-  }
-
-  if (data.user?.app_metadata?.role !== "admin") {
-    await supabaseClient.auth.signOut();
-
-    showMessage(
-      loginMessage,
-      "This account does not have admin permission."
-    );
-
-    return;
-  }
-
-  currentAdmin = data.user;
-  showMessage(loginMessage, "Login successful.", true);
-  showDashboard();
-});
-
-
-// 9. ADMIN LOGOUT
-
-logoutBtn.addEventListener("click", async () => {
-  await supabaseClient.auth.signOut();
-
-  currentAdmin = null;
-  showLogin();
-});
-
-
-// 10. GENERATE UNIQUE FILE NAME
-
-function createFileName(file) {
-  const extension = file.name.split(".").pop().toLowerCase();
-
-  return `${crypto.randomUUID()}.${extension}`;
-}
-
-
-// 11. UPLOAD FILE
-
-async function uploadFile(bucket, file) {
-  if (!file) return null;
-
-  const fileName = createFileName(file);
-
-  const { data, error } = await supabaseClient.storage
-    .from(bucket)
-    .upload(fileName, file, {
-      cacheControl: "3600",
-      upsert: false
-    });
-
-  if (error) throw error;
-
-  if (bucket === POSTER_BUCKET) {
-    const { data: publicData } = supabaseClient.storage
-      .from(bucket)
-      .getPublicUrl(data.path);
-
-    return publicData.publicUrl;
-  }
-
-  // Videos are private: save their storage path,
-  // not a public URL.
-  return data.path;
-}
-
-
-// 12. ADD NEW TITLE
-
-titleForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  if (!currentAdmin || currentAdmin.app_metadata?.role !== "admin") {
-    showMessage(uploadMessage, "Admin access required.");
-    return;
-  }
-
-  const posterFile = document.getElementById("posterFile").files[0];
-  const backdropFile = document.getElementById("backdropFile").files[0];
-  const videoFile = document.getElementById("videoFile").files[0];
-
-  if (!posterFile) {
-    showMessage(uploadMessage, "Please select a poster image.");
-    return;
-  }
-
-  if (posterFile.size > 10 * 1024 * 1024) {
-    showMessage(uploadMessage, "Poster must be smaller than 10 MB.");
-    return;
-  }
-
-  if (backdropFile && backdropFile.size > 10 * 1024 * 1024) {
-    showMessage(uploadMessage, "Background image must be smaller than 10 MB.");
-    return;
-  }
-
-  if (videoFile && videoFile.size > 500 * 1024 * 1024) {
-    showMessage(uploadMessage, "Video must be smaller than 500 MB.");
-    return;
-  }
-
-  const yearValue = document.getElementById("year").value;
-  const ratingValue = document.getElementById("rating").value;
-
-  saveTitleBtn.disabled = true;
-  saveTitleBtn.textContent = "Uploading...";
-
-  showMessage(uploadMessage, "Uploading your content...");
-
-  try {
-    const posterUrl = await uploadFile(POSTER_BUCKET, posterFile);
-
-    const backdropUrl = backdropFile
-      ? await uploadFile(POSTER_BUCKET, backdropFile)
-      : null;
-
-    const videoPath = videoFile
-      ? await uploadFile(VIDEO_BUCKET, videoFile)
-      : null;
-
-    const titleData = {
-      title: document.getElementById("title").value.trim(),
-      type: document.getElementById("type").value,
-      genre: document.getElementById("genre").value,
-      year: yearValue ? Number(yearValue) : null,
-      rating: ratingValue ? Number(ratingValue) : null,
-      duration: document.getElementById("duration").value.trim(),
-      description: document.getElementById("description").value.trim(),
-
-      poster_url: posterUrl,
-      backdrop_url: backdropUrl,
-
-      // This stores a private storage path.
-      video_url: videoPath,
-
-      featured: document.getElementById("featured").checked,
-      published: document.getElementById("published").checked
-    };
-
-    const { error } = await supabaseClient
-      .from("titles")
-      .insert([titleData]);
-
-    if (error) throw error;
-
-    showMessage(uploadMessage, "Content uploaded successfully!", true);
-
-    titleForm.reset();
-
-    await loadAdminTitles();
-
-  } catch (error) {
-    console.error("Upload error:", error);
-
-    showMessage(
-      uploadMessage,
-      error.message || "Upload failed. Please try again."
-    );
-
-  } finally {
-    saveTitleBtn.disabled = false;
-    saveTitleBtn.textContent = "Upload Content";
-  }
-});
-
-
-// 13. LOAD ALL ADMIN TITLES
-
-async function loadAdminTitles() {
-  const { data, error } = await supabaseClient
-    .from("titles")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error(error);
-    adminTitles.innerHTML = `
-      <tr><td colspan="5">Unable to load content.</td></tr>
-    `;
-    return;
-  }
-
-  const titles = data || [];
-
-  document.getElementById("totalTitles").textContent = titles.length;
-
-  document.getElementById("publishedTitles").textContent =
-    titles.filter(item => item.published).length;
-
-  document.getElementById("draftTitles").textContent =
-    titles.filter(item => !item.published).length;
-
-  if (!titles.length) {
-    adminTitles.innerHTML = `
-      <tr><td colspan="5">No content uploaded yet.</td></tr>
-    `;
-    return;
-  }
-
-  adminTitles.innerHTML = titles.map(item => `
-    <tr>
-      <td>
-        <img
-          src="${escapeHTML(item.poster_url || "")}"
-          alt=""
-          width="55"
-          loading="lazy"
-        >
-      </td>
-
-      <td>${escapeHTML(item.title)}</td>
-
-      <td>${escapeHTML(item.genre || "")}</td>
-
-      <td>${item.published ? "Published" : "Draft"}</td>
-
-      <td>
-        <button
-          class="admin-delete-btn"
-          type="button"
-          data-delete-id="${escapeHTML(item.id)}"
-        >
-          Delete
-        </button>
-      </td>
-    </tr>
-  `).join("");
-}
-
-
-// 14. DELETE TITLE
-
-adminTitles.addEventListener("click", async (event) => {
-  const button = event.target.closest("[data-delete-id]");
-
-  if (!button || !currentAdmin) return;
-
-  const id = button.dataset.deleteId;
-
-  if (!confirm("Are you sure you want to delete this title?")) {
-    return;
-  }
-
-  const { error } = await supabaseClient
-    .from("titles")
-    .delete()
-    .eq("id", id);
-
-  if (error) {
-    alert("Delete failed: " + error.message);
-    return;
-  }
-
-  await loadAdminTitles();
-});
-
-
-// 15. SAFE HTML OUTPUT
-
-function escapeHTML(value) {
-  return String(value ?? "").replace(/[&<>"']/g, character => ({
+function escapeHTML(value = "") {
+  return String(value).replace(/[&<>"']/g, character => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
@@ -384,349 +63,1025 @@ function escapeHTML(value) {
   })[character]);
 }
 
-
-// ==========================================
-// 16. CINEVA TMDB IMPORT INTEGRATION
-// ==========================================
-
-function createTMDBPanel() {
-  if (document.getElementById("cinevaTMDBPanel")) return;
-
-  const panel = document.createElement("section");
-
-  panel.id = "cinevaTMDBPanel";
-  panel.className = "cineva-tmdb-panel";
-
-  panel.innerHTML = `
-    <div class="tmdb-panel-heading">
-      <div>
-        <span class="tmdb-label">CONTENT DISCOVERY</span>
-        <h2>Import from TMDB</h2>
-        <p>
-          Find a movie or series and import its information
-          directly into your CINEVA database.
-        </p>
-      </div>
-    </div>
-
-    <div class="tmdb-search-controls">
-
-      <select id="tmdbMediaType">
-        <option value="movie">Movies</option>
-        <option value="tv">TV Series</option>
-      </select>
-
-      <input
-        type="search"
-        id="tmdbSearchInput"
-        placeholder="Search movie or series..."
-      >
-
-      <button type="button" id="tmdbSearchBtn">
-        Search TMDB
-      </button>
-
-    </div>
-
-    <div id="tmdbStatus" aria-live="polite"></div>
-
-    <div id="tmdbResults" class="tmdb-results"></div>
-  `;
-
-  dashboardPanel.prepend(panel);
-
-  document
-    .getElementById("tmdbSearchBtn")
-    .addEventListener("click", searchCINEVATMDB);
-
-  document
-    .getElementById("tmdbSearchInput")
-    .addEventListener("keydown", event => {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        searchCINEVATMDB();
-      }
-    });
+function slugify(value = "") {
+  return String(value)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
+function parseDuration(value) {
+  if (!value) return null;
 
-// ==========================================
-// TMDB STATUS MESSAGE
-// ==========================================
+  const text = String(value).toLowerCase().trim();
 
-function tmdbMessage(message, error = false) {
-  const status = document.getElementById("tmdbStatus");
+  // Example: 2h 10m
+  const hours = text.match(/(\d+)\s*h/);
+  const minutes = text.match(/(\d+)\s*m/);
 
-  if (!status) return;
+  if (hours || minutes) {
+    return (
+      Number(hours?.[1] || 0) * 60 +
+      Number(minutes?.[1] || 0)
+    );
+  }
 
-  status.textContent = message;
+  // A number is interpreted as minutes.
+  const number = Number(text);
 
-  status.style.color = error
-    ? "#ff6b6b"
-    : "#35d07f";
+  return Number.isFinite(number) && number > 0
+    ? Math.round(number)
+    : null;
 }
 
+function getSelectedFile(id) {
+  return document.getElementById(id)?.files?.[0] || null;
+}
 
-// ==========================================
-// SEARCH TMDB
-// ==========================================
+/* 4. ADMIN AUTHENTICATION */
 
+async function checkAdmin() {
+  const {
+    data: { user },
+    error
+  } = await supabaseClient.auth.getUser();
 
-async function searchCINEVATMDB() {
-  const query = document
-    .getElementById("tmdbSearchInput")
-    .value.trim();
-
-  const mediaType = document
-    .getElementById("tmdbMediaType")
-    .value;
-
-  const tmdbStatus = document.getElementById("tmdbStatus");
-  const tmdbResults = document.getElementById("tmdbResults");
-  const searchButton = document.getElementById("tmdbSearchBtn");
-
-  if (!query) {
-    tmdbStatus.textContent = "Please enter a movie or series name.";
+  if (error || !user) {
+    currentAdmin = null;
+    showLogin();
     return;
   }
 
-  searchButton.disabled = true;
-  searchButton.textContent = "Searching...";
-  tmdbStatus.textContent = "Searching TMDB...";
-  tmdbResults.innerHTML = "";
+  if (user.app_metadata?.role !== "admin") {
+    currentAdmin = null;
+    await supabaseClient.auth.signOut();
 
-  try {
-    const { data, error } =
-      await supabaseClient.functions.invoke("hyper-action", {
-        body: {
-          action: "search",
-          query: query,
-          mediaType: mediaType
-        }
-      });
+    showMessage(
+      loginMessage,
+      "Access denied. This account is not an administrator.",
+      "error"
+    );
+
+    showLogin();
+    return;
+  }
+
+  currentAdmin = user;
+
+  showDashboard();
+  await loadAdminTitles();
+}
+
+function showLogin() {
+  if (loginPanel) loginPanel.hidden = false;
+  if (dashboardPanel) dashboardPanel.hidden = true;
+  if (logoutBtn) logoutBtn.hidden = true;
+}
+
+function showDashboard() {
+  if (loginPanel) loginPanel.hidden = true;
+  if (dashboardPanel) dashboardPanel.hidden = false;
+  if (logoutBtn) logoutBtn.hidden = false;
+
+  createTMDBPanel();
+  createEpisodeAndPartsPanel();
+}
+
+if (loginForm) {
+  loginForm.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const email = document.getElementById("adminEmail").value.trim();
+    const password = document.getElementById("adminPassword").value;
+
+    showMessage(loginMessage, "Signing in...", "info");
+
+    const { error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
 
     if (error) {
-      let errorMessage = error.message || "Request failed.";
+      showMessage(loginMessage, error.message, "error");
+      return;
+    }
 
-      if (error.context && typeof error.context.json === "function") {
-        try {
-          const details = await error.context.json();
-          errorMessage =
-            details.error || details.message || errorMessage;
-        } catch (e) {
-          console.error("Could not read server response:", e);
-        }
+    await checkAdmin();
+  });
+}
+
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", async () => {
+    await supabaseClient.auth.signOut();
+    currentAdmin = null;
+    showLogin();
+  });
+}
+
+supabaseClient.auth.onAuthStateChange((_event, session) => {
+  if (session?.user) {
+    setTimeout(checkAdmin, 0);
+  } else {
+    showLogin();
+  }
+});
+
+/* 5. STORAGE UPLOAD */
+
+async function uploadFile(bucket, file) {
+  if (!file) return null;
+
+  const safeName = file.name
+    .replace(/[^a-zA-Z0-9._-]/g, "-");
+
+  const filePath =
+    `${Date.now()}-${crypto.randomUUID()}-${safeName}`;
+
+  const { data, error } = await supabaseClient.storage
+    .from(bucket)
+    .upload(filePath, file, {
+      cacheControl: "3600",
+      upsert: false,
+      contentType: file.type
+    });
+
+  if (error) throw error;
+
+  if (bucket === POSTER_BUCKET) {
+    const { data: publicData } = supabaseClient.storage
+      .from(POSTER_BUCKET)
+      .getPublicUrl(data.path);
+
+    return publicData.publicUrl;
+  }
+
+  // Private video storage: save the storage path, not a public URL.
+  return data.path;
+}
+
+/* 6. ADD MOVIE OR SERIES */
+
+if (titleForm) {
+  titleForm.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    if (!currentAdmin) {
+      showMessage(uploadMessage, "Please sign in again.", "error");
+      return;
+    }
+
+    const title = document.getElementById("title").value.trim();
+    const type = document.getElementById("type").value;
+    const genre = document.getElementById("genre").value;
+
+    const yearValue = document.getElementById("year").value;
+    const ratingValue = document.getElementById("rating").value;
+    const durationValue = document.getElementById("duration").value;
+
+    const description =
+      document.getElementById("description").value.trim();
+
+    const posterFile = getSelectedFile("posterFile");
+    const backdropFile = getSelectedFile("backdropFile");
+    const videoFile = getSelectedFile("videoFile");
+
+    const featured =
+      document.getElementById("featured").checked;
+
+    const published =
+      document.getElementById("published").checked;
+
+    if (!title || !genre || !posterFile) {
+      showMessage(
+        uploadMessage,
+        "Enter a title, select a category and choose a poster.",
+        "error"
+      );
+      return;
+    }
+
+    // The series table does not have a video_url column.
+    if (type === "Series" && videoFile) {
+      showMessage(
+        uploadMessage,
+        "Upload series videos through the episode manager, not this form.",
+        "error"
+      );
+      return;
+    }
+
+    saveTitleBtn.disabled = true;
+    saveTitleBtn.textContent = "Uploading...";
+
+    try {
+      showMessage(uploadMessage, "Uploading poster...", "info");
+
+      const posterURL = await uploadFile(
+        POSTER_BUCKET,
+        posterFile
+      );
+
+      let backdropURL = null;
+      let videoPath = null;
+
+      if (backdropFile) {
+        showMessage(uploadMessage, "Uploading background...", "info");
+
+        backdropURL = await uploadFile(
+          POSTER_BUCKET,
+          backdropFile
+        );
       }
 
-      throw new Error(errorMessage);
+      if (videoFile) {
+        showMessage(uploadMessage, "Uploading video...", "info");
+
+        videoPath = await uploadFile(
+          VIDEO_BUCKET,
+          videoFile
+        );
+      }
+
+      const commonData = {
+        title,
+        slug: slugify(title),
+        description: description || null,
+        genre: [genre],
+        year: yearValue ? Number(yearValue) : null,
+        rating: ratingValue ? Number(ratingValue) : null,
+        poster_url: posterURL,
+        backdrop_url: backdropURL,
+        featured,
+        published,
+        updated_at: new Date().toISOString()
+      };
+
+      let result;
+
+      if (type === "Movie") {
+        const movieData = {
+          ...commonData,
+          duration: parseDuration(durationValue),
+          video_url: videoPath,
+          allow_download: false
+        };
+
+        result = await supabaseClient
+          .from("movies")
+          .insert(movieData);
+      } else {
+        result = await supabaseClient
+          .from("series")
+          .insert(commonData);
+      }
+
+      if (result.error) throw result.error;
+
+      showMessage(
+        uploadMessage,
+        type === "Movie"
+          ? "Movie uploaded successfully!"
+          : "Series uploaded successfully! Add its episodes next.",
+        "success"
+      );
+
+      titleForm.reset();
+
+      await loadAdminTitles();
+
+    } catch (error) {
+      console.error("CINEVA upload error:", error);
+
+      showMessage(
+        uploadMessage,
+        error.message || "Upload failed. Check your Supabase settings.",
+        "error"
+      );
+
+    } finally {
+      saveTitleBtn.disabled = false;
+      saveTitleBtn.textContent = "Upload Content";
     }
+  });
+}
 
-    if (data?.error) {
-      throw new Error(data.error);
-    }
+/* 7. LOAD MOVIES AND SERIES */
 
-    const results = data?.results || [];
+async function loadAdminTitles() {
+  if (!adminTitles) return;
 
-    tmdbStatus.textContent =
-      `${results.length} results found for "${query}".`;
+  adminTitles.innerHTML = `
+    <tr>
+      <td colspan="5">Loading content...</td>
+    </tr>
+  `;
 
-    displayCINEVATMDBResults(results);
+  try {
+    const [movieResult, seriesResult] = await Promise.all([
+      supabaseClient.from("movies").select("*")
+        .order("created_at", { ascending: false }),
+
+      supabaseClient.from("series").select("*")
+        .order("created_at", { ascending: false })
+    ]);
+
+    if (movieResult.error) throw movieResult.error;
+    if (seriesResult.error) throw seriesResult.error;
+
+    const movies = (movieResult.data || []).map(item => ({
+      ...item,
+      content_type: "Movie"
+    }));
+
+    const series = (seriesResult.data || []).map(item => ({
+      ...item,
+      content_type: "Series"
+    }));
+
+    allAdminContent = [...movies, ...series].sort((a, b) => {
+      return new Date(b.created_at || 0) -
+        new Date(a.created_at || 0);
+    });
+
+    updateAdminStats();
+    renderAdminTitles();
 
   } catch (error) {
-    console.error("CINEVA TMDB Search Error:", error);
+    console.error("Admin content loading error:", error);
 
-    tmdbStatus.textContent =
-      "TMDB search failed: " +
-      (error.message || "Unknown error.");
-
-  } finally {
-    searchButton.disabled = false;
-    searchButton.textContent = "Search TMDB";
+    adminTitles.innerHTML = `
+      <tr>
+        <td colspan="5">
+          Could not load content: ${escapeHTML(error.message)}
+        </td>
+      </tr>
+    `;
   }
 }
 
+function updateAdminStats() {
+  const total = allAdminContent.length;
 
-// ==========================================
-// DISPLAY TMDB SEARCH RESULTS
-// ==========================================
+  const published = allAdminContent.filter(
+    item => item.published === true
+  ).length;
 
-function displayCINEVATMDBResults(results) {
-  const container =
-    document.getElementById("tmdbResults");
+  const drafts = total - published;
 
-  if (!results.length) {
-    container.innerHTML = `
-      <div class="tmdb-no-results">
-        <h3>No results found</h3>
-        <p>Try another title.</p>
-      </div>
+  document.getElementById("totalTitles").textContent = total;
+  document.getElementById("publishedTitles").textContent = published;
+  document.getElementById("draftTitles").textContent = drafts;
+}
+
+/* 8. RENDER ADMIN CONTENT */
+
+function renderAdminTitles() {
+  if (!allAdminContent.length) {
+    adminTitles.innerHTML = `
+      <tr>
+        <td colspan="5">No movies or series have been added yet.</td>
+      </tr>
     `;
     return;
   }
 
-  container.innerHTML = results.map(item => `
-    <article class="tmdb-result-card">
+  adminTitles.innerHTML = allAdminContent.map(item => {
+    const category = Array.isArray(item.genre)
+      ? item.genre.join(", ")
+      : item.genre || "Uncategorized";
 
-      ${
-        item.poster
-          ? `<img
-              src="${escapeHTML(item.poster)}"
-              alt="${escapeHTML(item.title)}"
-              loading="lazy"
-            >`
-          : `<div class="tmdb-no-poster">No poster</div>`
-      }
+    const poster = item.poster_url
+      ? `<img src="${escapeHTML(item.poster_url)}"
+           alt="${escapeHTML(item.title)}"
+           class="admin-poster">`
+      : "No poster";
 
-      <div class="tmdb-result-details">
+    return `
+      <tr>
+        <td>${poster}</td>
 
-        <h3>${escapeHTML(item.title)}</h3>
+        <td>
+          <strong>${escapeHTML(item.title)}</strong>
+          <small>${item.content_type}</small>
+        </td>
 
-        <p>
-          ${escapeHTML(item.releaseDate || "Release date unavailable")}
-        </p>
+        <td>${escapeHTML(category)}</td>
 
-        <p class="tmdb-rating">
-          ★ ${Number(item.rating || 0).toFixed(1)} / 10
-        </p>
+        <td>
+          <span class="${item.published ? "status-published" : "status-draft"}">
+            ${item.published ? "Published" : "Draft"}
+          </span>
+        </td>
 
-        <p class="tmdb-description">
-          ${escapeHTML(item.overview || "No description available.")}
-        </p>
+        <td>
+          <button
+            class="btn btn-outline"
+            type="button"
+            data-action="toggle"
+            data-id="${item.id}"
+            data-type="${item.content_type}">
+            ${item.published ? "Unpublish" : "Publish"}
+          </button>
 
-        <button
-          type="button"
-          class="tmdb-import-button"
-          data-tmdb-id="${Number(item.id)}"
-          data-media-type="${item.mediaType === "tv" ? "tv" : "movie"}"
-        >
-          Import to CINEVA
-        </button>
+          <button
+            class="btn btn-outline"
+            type="button"
+            data-action="manage"
+            data-id="${item.id}"
+            data-type="${item.content_type}">
+            ${item.content_type === "Movie" ? "Parts" : "Episodes"}
+          </button>
 
-      </div>
-
-    </article>
-  `).join("");
-
-  container
-    .querySelectorAll(".tmdb-import-button")
-    .forEach(button => {
-
-      button.addEventListener("click", async () => {
-
-        const tmdbId = Number(button.dataset.tmdbId);
-        const mediaType = button.dataset.mediaType;
-
-        await importCINEVATMDB(
-          tmdbId,
-          mediaType,
-          button
-        );
-
-      });
-
-    });
+          <button
+            class="btn btn-danger"
+            type="button"
+            data-action="delete"
+            data-id="${item.id}"
+            data-type="${item.content_type}">
+            Delete
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
 }
 
+/* 9. PUBLISH / UNPUBLISH / DELETE */
 
-// ==========================================
-// IMPORT TMDB CONTENT INTO SUPABASE
-// ==========================================
+if (adminTitles) {
+  adminTitles.addEventListener("click", async event => {
+    const button = event.target.closest("button[data-action]");
+    if (!button) return;
 
-async function importCINEVATMDB(
-  tmdbId,
-  mediaType,
-  button
-) {
+    const id = button.dataset.id;
+    const type = button.dataset.type;
+    const action = button.dataset.action;
 
-  if (!currentAdmin) {
-    tmdbMessage("Admin login required.", true);
+    const table = type === "Movie" ? "movies" : "series";
+
+    try {
+      button.disabled = true;
+
+      if (action === "toggle") {
+        const item = allAdminContent.find(
+          content => content.id === id
+        );
+
+        if (!item) return;
+
+        const { error } = await supabaseClient
+          .from(table)
+          .update({
+            published: !item.published,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", id);
+
+        if (error) throw error;
+
+        await loadAdminTitles();
+      }
+
+      if (action === "delete") {
+        const confirmed = confirm(
+          `Delete "${button.closest("tr").querySelector("strong").textContent}"?`
+        );
+
+        if (!confirmed) return;
+
+        const { error } = await supabaseClient
+          .from(table)
+          .delete()
+          .eq("id", id);
+
+        if (error) throw error;
+
+        await loadAdminTitles();
+      }
+
+      if (action === "manage") {
+        openPartsOrEpisodesManager(id, type);
+      }
+
+    } catch (error) {
+      console.error("Content action error:", error);
+      alert(error.message || "Action failed.");
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
+/* 10. MOVIE PARTS AND SERIES EPISODE MANAGER */
+
+function createEpisodeAndPartsPanel() {
+  if (document.getElementById("contentDetailPanel")) return;
+
+  const panel = document.createElement("section");
+
+  panel.id = "contentDetailPanel";
+  panel.className = "admin-panel";
+  panel.hidden = true;
+
+  panel.innerHTML = `
+    <h2 id="detailPanelTitle">Manage Content</h2>
+
+    <p id="detailPanelMessage" class="form-message"></p>
+
+    <form id="detailContentForm">
+
+      <div id="seasonFields">
+        <label for="seasonNumber">Season Number</label>
+        <input id="seasonNumber" type="number" min="1" value="1">
+
+        <label for="episodeNumber">Episode Number</label>
+        <input id="episodeNumber" type="number" min="1" value="1">
+      </div>
+
+      <div id="partFields" hidden>
+        <label for="partNumber">Part Number</label>
+        <input id="partNumber" type="number" min="1" value="1">
+
+        <label for="partLabel">Part Label</label>
+        <input id="partLabel" type="text" value="Part A">
+      </div>
+
+      <label for="detailTitle">Title</label>
+      <input id="detailTitle" type="text" required>
+
+      <label for="detailDescription">Description</label>
+      <textarea id="detailDescription" rows="3"></textarea>
+
+      <label for="detailDuration">Duration (minutes)</label>
+      <input id="detailDuration" type="number" min="1">
+
+      <label for="detailVideo">Video File</label>
+      <input id="detailVideo" type="file"
+        accept="video/mp4,video/webm,video/ogg">
+
+      <label for="detailVideoURL">Or Existing Video URL / Storage Path</label>
+      <input id="detailVideoURL" type="text"
+        placeholder="Optional video URL or storage path">
+
+      <label for="detailStill">Episode Still Image (series only)</label>
+      <input id="detailStill" type="file"
+        accept="image/jpeg,image/png,image/webp">
+
+      <div class="admin-checkboxes">
+        <label>
+          <input type="checkbox" id="detailPublished">
+          Publish this item
+        </label>
+
+        <label>
+          <input type="checkbox" id="detailDownload">
+          Allow downloads
+        </label>
+      </div>
+
+      <button class="btn btn-primary" type="submit" id="saveDetailBtn">
+        Save
+      </button>
+
+      <button class="btn btn-outline" type="button" id="closeDetailBtn">
+        Close
+      </button>
+    </form>
+
+    <h3>Existing Parts / Episodes</h3>
+
+    <div id="detailItemsList">
+      No items loaded.
+    </div>
+  `;
+
+  dashboardPanel.appendChild(panel);
+
+  document.getElementById("closeDetailBtn")
+    .addEventListener("click", () => {
+      panel.hidden = true;
+    });
+
+  document.getElementById("detailContentForm")
+    .addEventListener("submit", savePartOrEpisode);
+}
+
+let activeDetailId = null;
+let activeDetailType = null;
+
+async function openPartsOrEpisodesManager(id, type) {
+  activeDetailId = id;
+  activeDetailType = type;
+
+  const panel = document.getElementById("contentDetailPanel");
+  const isMovie = type === "Movie";
+
+  panel.hidden = false;
+
+  document.getElementById("detailPanelTitle").textContent =
+    isMovie ? "Manage Movie Parts" : "Manage Series Episodes";
+
+  document.getElementById("partFields").hidden = !isMovie;
+  document.getElementById("seasonFields").hidden = isMovie;
+  document.getElementById("detailStill").parentElement.hidden = isMovie;
+
+  document.getElementById("detailContentForm").reset();
+
+  document.getElementById("detailPanelMessage").textContent = "";
+
+  await loadPartsOrEpisodes();
+  panel.scrollIntoView({ behavior: "smooth" });
+}
+
+async function loadPartsOrEpisodes() {
+  const isMovie = activeDetailType === "Movie";
+  const table = isMovie ? "movie_parts" : "episodes";
+  const foreignKey = isMovie ? "movie_id" : "series_id";
+
+  const list = document.getElementById("detailItemsList");
+
+  list.textContent = "Loading...";
+
+  try {
+    const { data, error } = await supabaseClient
+      .from(table)
+      .select("*")
+      .eq(foreignKey, activeDetailId)
+      .order(
+        isMovie ? "sort_order" : "season_number",
+        { ascending: true }
+      );
+
+    if (error) throw error;
+
+    if (!data.length) {
+      list.textContent = "No parts or episodes added yet.";
+      return;
+    }
+
+    list.innerHTML = data.map(item => `
+      <div class="admin-detail-item">
+        <strong>
+          ${escapeHTML(
+            isMovie
+              ? item.part_label
+              : `S${item.season_number} E${item.episode_number}`
+          )}
+          — ${escapeHTML(item.title || "")}
+        </strong>
+
+        <span>${item.published ? "Published" : "Draft"}</span>
+
+        <button
+          class="btn btn-danger"
+          type="button"
+          data-detail-delete="${item.id}">
+          Delete
+        </button>
+      </div>
+    `).join("");
+
+    list.querySelectorAll("[data-detail-delete]").forEach(button => {
+      button.addEventListener("click", async () => {
+        if (!confirm("Delete this item?")) return;
+
+        const { error: deleteError } = await supabaseClient
+          .from(table)
+          .delete()
+          .eq("id", button.dataset.detailDelete);
+
+        if (deleteError) {
+          alert(deleteError.message);
+          return;
+        }
+
+        await loadPartsOrEpisodes();
+      });
+    });
+
+  } catch (error) {
+    list.textContent = error.message;
+  }
+}
+
+async function savePartOrEpisode(event) {
+  event.preventDefault();
+
+  const isMovie = activeDetailType === "Movie";
+
+  const table = isMovie ? "movie_parts" : "episodes";
+
+  const button = document.getElementById("saveDetailBtn");
+  const message = document.getElementById("detailPanelMessage");
+
+  const title = document.getElementById("detailTitle").value.trim();
+
+  if (!title) {
+    showMessage(message, "Enter a title.", "error");
     return;
   }
 
-  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = "Saving...";
+
+  try {
+    let videoPath = document.getElementById("detailVideoURL")
+      .value.trim() || null;
+
+    const videoFile = getSelectedFile("detailVideo");
+    const stillFile = getSelectedFile("detailStill");
+
+    if (videoFile) {
+      videoPath = await uploadFile(VIDEO_BUCKET, videoFile);
+    }
+
+    if (!videoPath) {
+      throw new Error("Choose a video file or enter a video URL.");
+    }
+
+    const common = {
+      title,
+      description:
+        document.getElementById("detailDescription").value.trim() || null,
+      duration:
+        Number(document.getElementById("detailDuration").value) || null,
+      video_url: videoPath,
+      published:
+        document.getElementById("detailPublished").checked,
+      allow_download:
+        document.getElementById("detailDownload").checked,
+      updated_at: new Date().toISOString()
+    };
+
+    let data;
+
+    if (isMovie) {
+      const partNumber =
+        Number(document.getElementById("partNumber").value);
+
+      const partLabel =
+        document.getElementById("partLabel").value.trim();
+
+      if (!partNumber || !partLabel) {
+        throw new Error("Enter the part number and label.");
+      }
+
+      data = {
+        ...common,
+        movie_id: activeDetailId,
+        part_number: partNumber,
+        part_label: partLabel,
+        sort_order: partNumber
+      };
+
+    } else {
+      const seasonNumber =
+        Number(document.getElementById("seasonNumber").value);
+
+      const episodeNumber =
+        Number(document.getElementById("episodeNumber").value);
+
+      if (!seasonNumber || !episodeNumber) {
+        throw new Error("Enter the season and episode numbers.");
+      }
+
+      let stillURL = null;
+
+      if (stillFile) {
+        stillURL = await uploadFile(POSTER_BUCKET, stillFile);
+      }
+
+      data = {
+        ...common,
+        series_id: activeDetailId,
+        season_number: seasonNumber,
+        episode_number: episodeNumber,
+        still_url: stillURL
+      };
+    }
+
+    const { error } = await supabaseClient
+      .from(table)
+      .insert(data);
+
+    if (error) throw error;
+
+    showMessage(
+      message,
+      isMovie ? "Movie part saved!" : "Episode saved!",
+      "success"
+    );
+
+    document.getElementById("detailContentForm").reset();
+
+    await loadPartsOrEpisodes();
+
+  } catch (error) {
+    console.error("Part / episode error:", error);
+    showMessage(message, error.message, "error");
+
+  } finally {
+    button.disabled = false;
+    button.textContent = "Save";
+  }
+}
+
+/* 11. TMDB IMPORT PANEL */
+
+function createTMDBPanel() {
+  if (document.getElementById("tmdbAdminPanel")) return;
+
+  const panel = document.createElement("section");
+
+  panel.id = "tmdbAdminPanel";
+  panel.className = "admin-panel";
+
+  panel.innerHTML = `
+    <h2>TMDB Movie & Series Importer</h2>
+
+    <p>
+      Search TMDB and import movie or series metadata and artwork
+      into your CINEVA database.
+    </p>
+
+    <label for="tmdbSearchType">Content Type</label>
+
+    <select id="tmdbSearchType">
+      <option value="movie">Movie</option>
+      <option value="tv">Series</option>
+    </select>
+
+    <label for="tmdbSearchInput">Search Title</label>
+
+    <input
+      id="tmdbSearchInput"
+      type="search"
+      placeholder="Search for a movie or series..."
+    >
+
+    <button class="btn btn-primary" id="tmdbSearchBtn" type="button">
+      Search TMDB
+    </button>
+
+    <p id="tmdbMessage" class="form-message"></p>
+
+    <div id="tmdbResults"></div>
+  `;
+
+  dashboardPanel.prepend(panel);
+
+  document.getElementById("tmdbSearchBtn")
+    .addEventListener("click", searchTMDB);
+
+  document.getElementById("tmdbSearchInput")
+    .addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        searchTMDB();
+      }
+    });
+}
+
+async function searchTMDB() {
+  const query = document.getElementById("tmdbSearchInput")
+    .value.trim();
+
+  const mediaType = document.getElementById("tmdbSearchType").value;
+
+  const message = document.getElementById("tmdbMessage");
+  const resultsContainer = document.getElementById("tmdbResults");
+
+  if (!query) {
+    showMessage(message, "Enter a title to search.", "error");
+    return;
+  }
+
+  showMessage(message, "Searching TMDB...", "info");
+  resultsContainer.innerHTML = "";
+
+  try {
+    const { data, error } = await supabaseClient.functions.invoke(
+      TMDB_FUNCTION,
+      {
+        body: {
+          action: "search",
+          query,
+          mediaType
+        }
+      }
+    );
+
+    if (error) throw error;
+
+    if (!data || data.error) {
+      throw new Error(data?.error || "TMDB search failed.");
+    }
+
+    const results = data.results || [];
+
+    if (!results.length) {
+      showMessage(message, "No results found.", "info");
+      return;
+    }
+
+    showMessage(message, `${results.length} results found.`, "success");
+
+    resultsContainer.innerHTML = results.map(item => `
+      <div class="tmdb-result">
+        ${
+          item.poster
+            ? `<img src="${escapeHTML(item.poster)}"
+                 alt="${escapeHTML(item.title)}">`
+            : ""
+        }
+
+        <div>
+          <h3>${escapeHTML(item.title)}</h3>
+
+          <p>
+            ${escapeHTML(item.releaseDate || "Release date unknown")}
+          </p>
+
+          <p>${escapeHTML(item.overview || "")}</p>
+
+          <button
+            class="btn btn-primary"
+            type="button"
+            data-tmdb-id="${item.id}"
+            data-media-type="${item.mediaType || mediaType}">
+            Import to CINEVA
+          </button>
+        </div>
+      </div>
+    `).join("");
+
+    resultsContainer.querySelectorAll("[data-tmdb-id]")
+      .forEach(button => {
+        button.addEventListener("click", () => {
+          importTMDB(
+            Number(button.dataset.tmdbId),
+            button.dataset.mediaType,
+            button
+          );
+        });
+      });
+
+  } catch (error) {
+    console.error("TMDB search error:", error);
+    showMessage(message, error.message, "error");
+  }
+}
+
+async function importTMDB(tmdbId, mediaType, button) {
+  const message = document.getElementById("tmdbMessage");
 
   button.disabled = true;
   button.textContent = "Importing...";
 
-  tmdbMessage("Downloading artwork and saving metadata...");
+  showMessage(message, "Importing metadata and artwork...", "info");
 
   try {
-
-    const { data, error } =
-      await supabaseClient.functions.invoke("hyper-action", {
+    const { data, error } = await supabaseClient.functions.invoke(
+      TMDB_FUNCTION,
+      {
         body: {
           action: "import",
           tmdbId,
           mediaType
         }
-      });
+      }
+    );
 
     if (error) throw error;
 
-    if (!data?.success) {
-
-      if (data?.alreadyImported) {
-        throw new Error("This title is already imported.");
-      }
-
-      throw new Error(
-        data?.error || "Import failed."
-      );
+    if (!data || !data.success) {
+      throw new Error(data?.error || "TMDB import failed.");
     }
 
-    button.textContent = "Imported ✓";
-    button.classList.add("imported");
-
-    tmdbMessage(
-      `${data.title.title} successfully saved in Supabase!`
+    showMessage(
+      message,
+      data.message || "Successfully imported into CINEVA as a draft.",
+      "success"
     );
 
-    // Refresh the existing admin content table.
+    button.textContent = "Imported";
+
     await loadAdminTitles();
 
   } catch (error) {
-
     console.error("TMDB import error:", error);
 
+    showMessage(message, error.message, "error");
+
     button.disabled = false;
-    button.textContent = originalText;
-
-    tmdbMessage(
-      error.message || "Unable to import this title.",
-      true
-    );
-
+    button.textContent = "Retry Import";
   }
-
 }
 
+/* 12. INITIALIZE */
 
-// ==========================================
-// INITIALIZE TMDB PANEL
-// ==========================================
-
-// Add this function call when dashboard opens.
-
-const originalShowDashboard = showDashboard;
-
-showDashboard = function () {
-  originalShowDashboard();
-
-  createTMDBPanel();
-};
-
-
-// ==========================================
-// END TMDB INTEGRATION
-// ==========================================
-
-// 16. AUTH SESSION LISTENER
-
-supabaseClient.auth.onAuthStateChange(() => {
-  setTimeout(checkAdmin, 0);
+document.addEventListener("DOMContentLoaded", async () => {
+  showLogin();
+  await checkAdmin();
 });
-
-
-// 17. START DASHBOARD
-
-checkAdmin();
