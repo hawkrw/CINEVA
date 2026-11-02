@@ -1,0 +1,214 @@
+
+/* =========================================
+   CINEVA - TMDB ADMIN IMPORTER
+========================================= */
+
+.tmdb-admin-panel {
+    width: 100%;
+    margin: 30px 0;
+    padding: 25px;
+    background: linear-gradient(145deg, #151522, #0d0d17);
+    border: 1px solid rgba(232, 74, 145, 0.2);
+    border-radius: 18px;
+    color: #fff;
+    box-sizing: border-box;
+}
+
+.tmdb-admin-header {
+    margin-bottom: 22px;
+}
+
+.tmdb-admin-header h2 {
+    margin: 0 0 8px;
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.tmdb-admin-header p {
+    margin: 0;
+    color: #a5a5b5;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.tmdb-admin-controls {
+    display: grid;
+    grid-template-columns: 150px 1fr auto;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.tmdb-admin-controls select,
+.tmdb-admin-controls input {
+    width: 100%;
+    min-width: 0;
+    padding: 13px 14px;
+    color: #fff;
+    background: #20202d;
+    border: 1px solid #343443;
+    border-radius: 9px;
+    outline: none;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.tmdb-admin-controls select:focus,
+.tmdb-admin-controls input:focus {
+    border-color: #e84a91;
+    box-shadow: 0 0 0 3px rgba(232, 74, 145, 0.12);
+}
+
+.tmdb-admin-controls option {
+    background: #20202d;
+    color: #fff;
+}
+
+#tmdbSearchBtn {
+    padding: 12px 22px;
+    border: none;
+    border-radius: 9px;
+    background: linear-gradient(135deg, #e84a91, #963ee8);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.25s ease;
+}
+
+#tmdbSearchBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 20px rgba(232, 74, 145, 0.25);
+}
+
+#tmdbSearchBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+#tmdbStatus {
+    min-height: 20px;
+    margin: 12px 0 18px;
+    color: #b8b8c7;
+    font-size: 13px;
+}
+
+.tmdb-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 16px;
+}
+
+.tmdb-result-card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #1a1a27;
+    border: 1px solid #30303e;
+    border-radius: 13px;
+    transition: 0.25s ease;
+}
+
+.tmdb-result-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(232, 74, 145, 0.6);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+}
+
+.tmdb-result-card img {
+    width: 100%;
+    height: 280px;
+    object-fit: cover;
+    background: #242432;
+}
+
+.tmdb-result-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 15px;
+}
+
+.tmdb-result-info h3 {
+    margin: 0 0 8px;
+    color: #fff;
+    font-size: 16px;
+    line-height: 1.4;
+}
+
+.tmdb-result-info p {
+    margin: 0 0 10px;
+    color: #aaaabb;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.tmdb-result-info .tmdb-overview {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    margin-bottom: 15px;
+}
+
+.tmdb-result-info button {
+    width: 100%;
+    margin-top: auto;
+    padding: 11px 14px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #e84a91, #963ee8);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.tmdb-result-info button:hover {
+    filter: brightness(1.15);
+}
+
+.tmdb-result-info button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@media (max-width: 650px) {
+    .tmdb-admin-panel {
+        padding: 17px;
+    }
+
+    .tmdb-admin-controls {
+        grid-template-columns: 1fr;
+    }
+
+    .tmdb-results {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .tmdb-result-card img {
+        height: 210px;
+    }
+
+    .tmdb-result-info {
+        padding: 11px;
+    }
+
+    .tmdb-result-info h3 {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 360px) {
+    .tmdb-results {
+        grid-template-columns: 1fr;
+    }
+
+    .tmdb-result-card img {
+        height: 280px;
+    }
+}
