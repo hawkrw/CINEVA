@@ -9,16 +9,21 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css">
 
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CINEVA STYLES -->
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/tmdb-admin.css">
 </head>
 
 <body class="admin-page">
 
+  <!-- HEADER -->
   <header class="site-header">
     <div class="container nav-container">
+
       <a href="index.html" class="logo">CINEVA<span>.</span></a>
 
       <nav class="main-nav">
@@ -29,9 +34,11 @@
       <button class="btn btn-outline" id="logoutBtn" type="button">
         Logout
       </button>
+
     </div>
   </header>
 
+  <!-- MAIN -->
   <main class="admin-main">
     <div class="container">
 
@@ -43,11 +50,13 @@
         </div>
       </div>
 
-      <!-- LOGIN SECTION -->
+      <!-- LOGIN -->
       <section class="admin-panel" id="loginPanel">
+
         <h2>Admin Login</h2>
 
         <form id="loginForm">
+
           <label for="adminEmail">Email Address</label>
           <input
             type="email"
@@ -69,13 +78,17 @@
           </button>
 
           <p id="loginMessage" class="form-message"></p>
+
         </form>
+
       </section>
 
-      <!-- DASHBOARD SECTION -->
+      <!-- DASHBOARD -->
       <section id="dashboardPanel" hidden>
 
+        <!-- STATISTICS -->
         <div class="admin-stats">
+
           <div class="stat-card">
             <span>Total Titles</span>
             <strong id="totalTitles">0</strong>
@@ -90,10 +103,12 @@
             <span>Unpublished</span>
             <strong id="draftTitles">0</strong>
           </div>
+
         </div>
 
-        <!-- ADD CONTENT -->
+        <!-- MANUAL UPLOAD -->
         <section class="admin-panel">
+
           <h2>Add New Movie / Series</h2>
 
           <form id="titleForm">
@@ -180,6 +195,7 @@
             >
 
             <div class="admin-checkboxes">
+
               <label>
                 <input type="checkbox" id="featured">
                 Featured on Homepage
@@ -189,23 +205,32 @@
                 <input type="checkbox" id="published">
                 Publish Immediately
               </label>
+
             </div>
 
-            <button class="btn btn-primary" type="submit" id="saveTitleBtn">
+            <button
+              class="btn btn-primary"
+              type="submit"
+              id="saveTitleBtn"
+            >
               Upload Content
             </button>
 
             <p id="uploadMessage" class="form-message"></p>
 
           </form>
+
         </section>
 
         <!-- CONTENT MANAGEMENT -->
         <section class="admin-panel">
+
           <h2>Manage Content</h2>
 
           <div class="admin-table-wrap">
+
             <table class="admin-table">
+
               <thead>
                 <tr>
                   <th>Poster</th>
@@ -221,7 +246,9 @@
                   <td colspan="5">Loading content...</td>
                 </tr>
               </tbody>
+
             </table>
+
           </div>
 
         </section>
@@ -231,14 +258,23 @@
     </div>
   </main>
 
+  <!-- FOOTER -->
   <footer class="site-footer">
+
     <div class="container footer-bottom">
+
       <a href="index.html" class="logo">CINEVA<span>.</span></a>
+
       <p>© <span id="footerYear"></span> CINEVA Admin</p>
+
     </div>
+
   </footer>
 
+  <!-- SUPABASE -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- ADMIN JAVASCRIPT -->
   <script src="js/admin.js"></script>
 
 </body>
