@@ -702,6 +702,7 @@ function initializeFooter() {
   }
 }
 
+
 /* 22. START CINEVA */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -716,9 +717,4 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadTitles();
 
   enableRealtime();
-});
-
-
-  enableRealtime();
-
 });
