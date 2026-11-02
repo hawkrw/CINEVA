@@ -1,0 +1,244 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>CINEVA Admin Dashboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="admin-page">
+
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="index.html" class="logo">CINEVA<span>.</span></a>
+
+      <nav class="main-nav">
+        <a href="index.html">View Website</a>
+        <a href="admin.html">Dashboard</a>
+      </nav>
+
+      <button class="btn btn-outline" id="logoutBtn" type="button">
+        Logout
+      </button>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <div class="container">
+
+      <div class="admin-heading">
+        <div>
+          <span class="eyebrow">CONTENT MANAGEMENT</span>
+          <h1>CINEVA Dashboard</h1>
+          <p>Manage your movies and series in one place.</p>
+        </div>
+      </div>
+
+      <!-- LOGIN SECTION -->
+      <section class="admin-panel" id="loginPanel">
+        <h2>Admin Login</h2>
+
+        <form id="loginForm">
+          <label for="adminEmail">Email Address</label>
+          <input
+            type="email"
+            id="adminEmail"
+            placeholder="admin@example.com"
+            required
+          >
+
+          <label for="adminPassword">Password</label>
+          <input
+            type="password"
+            id="adminPassword"
+            placeholder="Enter password"
+            required
+          >
+
+          <button class="btn btn-primary" type="submit">
+            Sign In
+          </button>
+
+          <p id="loginMessage" class="form-message"></p>
+        </form>
+      </section>
+
+      <!-- DASHBOARD SECTION -->
+      <section id="dashboardPanel" hidden>
+
+        <div class="admin-stats">
+          <div class="stat-card">
+            <span>Total Titles</span>
+            <strong id="totalTitles">0</strong>
+          </div>
+
+          <div class="stat-card">
+            <span>Published</span>
+            <strong id="publishedTitles">0</strong>
+          </div>
+
+          <div class="stat-card">
+            <span>Unpublished</span>
+            <strong id="draftTitles">0</strong>
+          </div>
+        </div>
+
+        <!-- ADD CONTENT -->
+        <section class="admin-panel">
+          <h2>Add New Movie / Series</h2>
+
+          <form id="titleForm">
+
+            <label for="title">Title</label>
+            <input
+              type="text"
+              id="title"
+              placeholder="Enter movie or series title"
+              required
+            >
+
+            <label for="type">Content Type</label>
+            <select id="type" required>
+              <option value="Movie">Movie</option>
+              <option value="Series">Series</option>
+            </select>
+
+            <label for="genre">Category</label>
+            <select id="genre" required>
+              <option value="">Select category</option>
+              <option value="Action">Action</option>
+              <option value="Horror">Horror</option>
+              <option value="Erotic">Erotic</option>
+              <option value="Drama">Drama</option>
+              <option value="High School">High School</option>
+              <option value="Animation">Animation</option>
+              <option value="Comedy">Comedy</option>
+            </select>
+
+            <label for="year">Release Year</label>
+            <input
+              type="number"
+              id="year"
+              min="1900"
+              max="2100"
+              placeholder="2026"
+            >
+
+            <label for="rating">Rating</label>
+            <input
+              type="number"
+              id="rating"
+              min="0"
+              max="10"
+              step="0.1"
+              placeholder="8.5"
+            >
+
+            <label for="duration">Duration</label>
+            <input
+              type="text"
+              id="duration"
+              placeholder="2h 10m or 10 Episodes"
+            >
+
+            <label for="description">Description</label>
+            <textarea
+              id="description"
+              rows="5"
+              placeholder="Write movie or series description..."
+            ></textarea>
+
+            <label for="posterFile">Poster Image</label>
+            <input
+              type="file"
+              id="posterFile"
+              accept="image/jpeg,image/png,image/webp"
+              required
+            >
+
+            <label for="backdropFile">Background Image</label>
+            <input
+              type="file"
+              id="backdropFile"
+              accept="image/jpeg,image/png,image/webp"
+            >
+
+            <label for="videoFile">Video File</label>
+            <input
+              type="file"
+              id="videoFile"
+              accept="video/mp4,video/webm,video/ogg"
+            >
+
+            <div class="admin-checkboxes">
+              <label>
+                <input type="checkbox" id="featured">
+                Featured on Homepage
+              </label>
+
+              <label>
+                <input type="checkbox" id="published">
+                Publish Immediately
+              </label>
+            </div>
+
+            <button class="btn btn-primary" type="submit" id="saveTitleBtn">
+              Upload Content
+            </button>
+
+            <p id="uploadMessage" class="form-message"></p>
+
+          </form>
+        </section>
+
+        <!-- CONTENT MANAGEMENT -->
+        <section class="admin-panel">
+          <h2>Manage Content</h2>
+
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Poster</th>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+
+              <tbody id="adminTitles">
+                <tr>
+                  <td colspan="5">Loading content...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </section>
+
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-bottom">
+      <a href="index.html" class="logo">CINEVA<span>.</span></a>
+      <p>© <span id="footerYear"></span> CINEVA Admin</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/admin.js"></script>
+
+</body>
+</html>
