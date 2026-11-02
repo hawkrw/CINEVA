@@ -5,7 +5,6 @@
 ========================================= */
 
 /* 1. SUPABASE CONFIGURATION */
-
 const SUPABASE_URL = "https://ciifhscwcaslnkwtgoyp.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpaWZoc2N3Y2FzbG5rd3Rnb3lwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM2MDk3NTUsImV4cCI6MjEwOTE4NTc1NX0.XdYZzTlBNY9xRm08cu6gKWkKI7LeuF45jUSFE3cEMhA";
 
@@ -21,7 +20,6 @@ if (
     SUPABASE_ANON_KEY
   );
 }
-
 
 /* =========================================
    CINEVA — PREMIUM STREAMING PLATFORM
