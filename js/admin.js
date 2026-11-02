@@ -500,7 +500,7 @@ async function searchCINEVATMDB() {
 
   try {
     const { data, error } =
-      await supabaseClient.functions.invoke("tmdb-api", {
+      await supabaseClient.functions.invoke("hyper-action", {
         body: {
           action: "search",
           query,
@@ -642,7 +642,7 @@ async function importCINEVATMDB(
   try {
 
     const { data, error } =
-      await supabaseClient.functions.invoke("tmdb-api", {
+      await supabaseClient.functions.invoke("hyper-action", {
         body: {
           action: "import",
           tmdbId,
