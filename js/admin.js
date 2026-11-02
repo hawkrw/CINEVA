@@ -471,6 +471,7 @@ function tmdbMessage(message, error = false) {
 // SEARCH TMDB
 // ==========================================
 
+
 async function searchCINEVATMDB() {
   const query = document
     .getElementById("tmdbSearchInput")
@@ -480,53 +481,63 @@ async function searchCINEVATMDB() {
     .getElementById("tmdbMediaType")
     .value;
 
-  const resultsContainer =
-    document.getElementById("tmdbResults");
-
-  const searchButton =
-    document.getElementById("tmdbSearchBtn");
+  const tmdbStatus = document.getElementById("tmdbStatus");
+  const tmdbResults = document.getElementById("tmdbResults");
+  const searchButton = document.getElementById("tmdbSearchBtn");
 
   if (!query) {
-    tmdbMessage("Please enter a movie or series name.", true);
+    tmdbStatus.textContent = "Please enter a movie or series name.";
     return;
   }
 
   searchButton.disabled = true;
   searchButton.textContent = "Searching...";
-
-  resultsContainer.innerHTML = "";
-
-  tmdbMessage("Searching TMDB...");
+  tmdbStatus.textContent = "Searching TMDB...";
+  tmdbResults.innerHTML = "";
 
   try {
     const { data, error } =
       await supabaseClient.functions.invoke("hyper-action", {
         body: {
           action: "search",
-          query,
-          mediaType
+          query: query,
+          mediaType: mediaType
         }
       });
 
-    if (error) throw error;
+    if (error) {
+      let errorMessage = error.message || "Request failed.";
 
-    if (!data?.success) {
-      throw new Error(data?.error || "TMDB search failed.");
+      if (error.context && typeof error.context.json === "function") {
+        try {
+          const details = await error.context.json();
+          errorMessage =
+            details.error || details.message || errorMessage;
+        } catch (e) {
+          console.error("Could not read server response:", e);
+        }
+      }
+
+      throw new Error(errorMessage);
     }
 
-    displayCINEVATMDBResults(data.results || []);
+    if (data?.error) {
+      throw new Error(data.error);
+    }
 
-    tmdbMessage(
-      `${data.results.length} result(s) found.`
-    );
+    const results = data?.results || [];
+
+    tmdbStatus.textContent =
+      `${results.length} results found for "${query}".`;
+
+    displayCINEVATMDBResults(results);
 
   } catch (error) {
-    console.error("TMDB search error:", error);
+    console.error("CINEVA TMDB Search Error:", error);
 
-    tmdbMessage(
-      error.message || "Unable to search TMDB.",
-      true
-    );
+    tmdbStatus.textContent =
+      "TMDB search failed: " +
+      (error.message || "Unknown error.");
 
   } finally {
     searchButton.disabled = false;
