@@ -6,7 +6,7 @@
 // 1. SUPABASE CONFIGURATION
 
 const SUPABASE_URL = "https://ciifhscwcaslnkwtgoyp.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpaWZoc2N3Y2FzbG5rd3Rnb3lwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM2MDk3NTUsImV4cCI6MjEwOTE4NTc1NX0.XdYZzTlBNY9xRm08cu6gKWkKI7LeuF45jUSFE3cEMhA";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4amdlanVqZnhlampsYmZpemd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MTQzMTQsImV4cCI6MjA5NDA5MDMxNH0.CWUYLk4qJfriIYXWScB7wcHHVTCuz0SGDhWUV3tMR1Y";
 
 
 const supabaseClient = window.supabase.createClient(
