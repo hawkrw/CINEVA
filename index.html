@@ -1,382 +1,311 @@
-
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080910">
+  <meta name="description" content="CINEVA — your world, your cinema. Discover movies and series.">
+  <title>CINEVA — Your World. Your Cinema.</title>
 
-    <meta name="description"
-        content="CINEVA - Discover and stream your favorite movies and series.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <title>CINEVA - Movies & Series</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Website Styles -->
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/home.css">
-    <link rel="stylesheet" href="css/cards.css">
-    <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="style.css">
 
-    <!-- Font Awesome -->
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
-
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet">
-
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
 
-    <!-- =================================
-         HEADER
-    ================================== -->
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
 
-    <header class="main-header">
+  <!-- HEADER -->
+  <header class="topbar">
 
-        <div class="header-container">
+    <a class="brand" href="index.html">
+      <span class="brand-mark">C<span>.</span></span>
+      <span class="brand-name">
+        CINEVA
+        <small>YOUR WORLD. YOUR CINEMA.</small>
+      </span>
+    </a>
 
-            <a href="index.html" class="logo">
-                CINEVA<span>.</span>
-            </a>
+    <button class="mobile-menu" id="mobileMenu" aria-label="Open menu">☰</button>
 
-            <nav class="main-nav">
+    <nav class="main-nav" id="mainNav">
+      <a class="nav-link active" href="index.html">Home</a>
+      <a class="nav-link" href="#latest">Latest</a>
+      <a class="nav-link" href="#movies">Movies</a>
+      <a class="nav-link" href="#series">Series</a>
+      <a class="nav-link" href="#categories">Categories</a>
+    </nav>
 
-                <a href="index.html" class="active">Home</a>
+    <div class="header-actions">
 
-                <a href="genre.html?category=movie">Movies</a>
+      <label class="search-box">
+        <span>⌕</span>
+        <input id="searchInput" type="search" placeholder="Search titles..." aria-label="Search titles">
+      </label>
 
-                <a href="genre.html?category=series">Series</a>
+      <button class="icon-btn" id="myListButton" title="My list">♡</button>
 
-                <a href="#latest">Latest</a>
+      <a class="sign-in" href="#signin">Sign in <span>↗</span></a>
 
-                <a href="#genres">Categories</a>
+    </div>
+  </header>
 
-            </nav>
+  <!-- MAIN CONTENT -->
+  <main>
 
-            <div class="header-actions">
+    <!-- HERO SECTION -->
+    <section class="hero" id="home">
 
-                <button class="search-toggle" aria-label="Search">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                </button>
+      <div class="hero-backdrop" id="heroBackdrop"></div>
+      <div class="hero-shade"></div>
 
-                <a href="login.html" class="login-btn">
-                    Sign In
-                </a>
+      <div class="hero-content">
 
-                <button class="mobile-menu" aria-label="Open menu">
-                    <i class="fa-solid fa-bars"></i>
-                </button>
+        <div class="eyebrow">
+          <i></i> CINEVA ORIGINALS <span>•</span> FEATURED
+        </div>
 
-            </div>
+        <p class="hero-kicker" id="heroMeta">THE NIGHT IS YOURS</p>
+
+        <h1 id="heroTitle">
+          Stories that<br>
+          <em>stay with you.</em>
+        </h1>
+
+        <p class="hero-description" id="heroDescription">
+          Discover unforgettable movies, bold new series and stories from around the world.
+        </p>
+
+        <div class="hero-buttons">
+
+          <a class="btn btn-primary" id="heroWatch" href="watch.html?id=featured">
+            ▶ &nbsp; Explore title
+          </a>
+
+          <a class="btn btn-glass" href="#latest">
+            ＋ &nbsp; Browse library
+          </a>
 
         </div>
 
-    </header>
-
-
-    <!-- =================================
-         SEARCH AREA
-    ================================== -->
-
-    <section class="search-section" id="search-section">
-
-        <div class="search-container">
-
-            <input
-                type="search"
-                id="search-input"
-                placeholder="Search movies, series..."
-            >
-
-            <button id="search-btn" aria-label="Submit search">
-                <i class="fa-solid fa-magnifying-glass"></i>
-            </button>
-
+        <div class="hero-foot">
+          <span class="hero-dot"></span>
+          CURATED FOR YOUR NEXT MOVIE NIGHT
         </div>
+
+      </div>
+
+      <div class="hero-side-note">
+        CINEVA <span>01 / 04</span>
+      </div>
 
     </section>
 
+    <!-- CONTENT -->
+    <section class="content-wrap">
+
+      <div class="quick-stats">
+        <span><b>✦</b> Discover something new</span>
+        <span><b>◈</b> Movies & series</span>
+        <span><b>▶</b> Watch your way</span>
+      </div>
+
+      <!-- LATEST ADDED -->
+      <section class="section" id="latest">
+
+        <div class="section-heading">
+          <div>
+            <p class="section-overline">FRESH FROM THE LIBRARY</p>
+            <h2>Latest <em>added</em></h2>
+          </div>
+
+          <a href="#all-content" class="text-link">
+            View all <span>↗</span>
+          </a>
+        </div>
+
+        <div class="poster-grid" id="latestGrid">
+          <div class="loading-state">
+            Loading the latest titles<span>✦</span>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- MOVIES -->
+      <section class="section" id="movies">
+
+        <div class="section-heading">
+          <div>
+            <p class="section-overline">FEATURE FILMS</p>
+            <h2>Popular <em>movies</em></h2>
+          </div>
+
+          <a href="#all-content" class="text-link">
+            Explore movies ↗
+          </a>
+        </div>
+
+        <div class="poster-grid" id="moviesGrid"></div>
+
+      </section>
+
+      <!-- SERIES -->
+      <section class="section" id="series">
+
+        <div class="section-heading">
+          <div>
+            <p class="section-overline">MORE TO GET INTO</p>
+            <h2>Trending <em>series</em></h2>
+          </div>
+
+          <a href="#all-content" class="text-link">
+            Explore series ↗
+          </a>
+        </div>
+
+        <div class="poster-grid" id="seriesGrid"></div>
+
+      </section>
+
+      <!-- GENRES -->
+      <section class="genre-section section" id="categories">
 
-    <!-- =================================
-         HERO SECTION
-    ================================== -->
+        <div class="section-heading">
+          <div>
+            <p class="section-overline">PICK YOUR MOOD</p>
+            <h2>Explore by <em>genre</em></h2>
+          </div>
+        </div>
 
-    <main>
+        <div class="genre-grid">
+
+          <button class="genre-tile" data-genre="Action">
+            <span>⚡</span>
+            <b>Action</b>
+            <small>Big energy</small>
+          </button>
 
-        <section class="hero-section" id="hero">
+          <button class="genre-tile" data-genre="Horror">
+            <span>☾</span>
+            <b>Horror</b>
+            <small>Feel the fear</small>
+          </button>
+
+          <button class="genre-tile" data-genre="Erotic">
+            <span>◇</span>
+            <b>Erotic</b>
+            <small>Adults 18+ only</small>
+          </button>
 
-            <div class="hero-overlay"></div>
+          <button class="genre-tile" data-genre="Drama">
+            <span>✧</span>
+            <b>Drama</b>
+            <small>Deep stories</small>
+          </button>
 
-            <div class="hero-content">
+          <button class="genre-tile" data-genre="High School">
+            <span>▤</span>
+            <b>High School</b>
+            <small>Growing up</small>
+          </button>
 
-                <span class="hero-label">
-                    <i class="fa-solid fa-fire"></i>
-                    YOUR NEXT FAVORITE
-                </span>
+          <button class="genre-tile" data-genre="Animation">
+            <span>✿</span>
+            <b>Animation</b>
+            <small>Imagination</small>
+          </button>
 
-                <h1>
-                    Discover a world
-                    of entertainment.
-                </h1>
+          <button class="genre-tile" data-genre="Comedy">
+            <span>☺</span>
+            <b>Comedy</b>
+            <small>Good times</small>
+          </button>
 
-                <p>
-                    Explore incredible movies and series.
-                    Discover new stories and enjoy
-                    entertainment without limits.
-                </p>
+        </div>
 
-                <div class="hero-buttons">
+      </section>
 
-                    <a href="#latest" class="primary-btn">
-                        <i class="fa-solid fa-play"></i>
-                        Explore Now
-                    </a>
+      <!-- ALL CONTENT -->
+      <section class="section all-content" id="all-content">
 
-                    <a href="#genres" class="secondary-btn">
-                        Explore Categories
-                    </a>
+        <div class="section-heading">
+          <div>
+            <p class="section-overline">THE CINEVA COLLECTION</p>
+            <h2>Explore the <em>library</em></h2>
+          </div>
+        </div>
 
-                </div>
+        <div class="filter-row">
 
-            </div>
+          <button class="filter-chip selected" data-filter="All">All</button>
+          <button class="filter-chip" data-filter="Movie">Movies</button>
+          <button class="filter-chip" data-filter="Series">Series</button>
 
-            <div class="hero-pagination">
-                <span class="active"></span>
-                <span></span>
-                <span></span>
-            </div>
+          <span class="filter-status" id="filterStatus"></span>
 
-        </section>
+        </div>
 
+        <div class="poster-grid" id="allGrid"></div>
 
-        <!-- =================================
-             LATEST ADDED
-        ================================== -->
+      </section>
 
-        <section class="content-section" id="latest">
+      <!-- NEWSLETTER -->
+      <section class="newsletter">
 
-            <div class="section-heading">
+        <div>
+          <p class="section-overline">THE CINEVA EDIT</p>
+          <h2>Stay in the <em>story.</em></h2>
+          <p>Get new releases and updates in your inbox.</p>
+        </div>
 
-                <div>
-                    <span class="section-subtitle">
-                        FRESH ENTERTAINMENT
-                    </span>
+        <form id="newsletterForm">
+          <input type="email" placeholder="Your email address" required>
+          <button class="btn btn-primary">Join the list ↗</button>
+        </form>
 
-                    <h2>Latest Added</h2>
+      </section>
 
-                    <p>Discover the newest additions to CINEVA.</p>
-                </div>
+    </section>
 
-                <a href="genre.html?sort=latest" class="view-all">
-                    View All
-                    <i class="fa-solid fa-arrow-right"></i>
-                </a>
+  </main>
 
-            </div>
+  <!-- FOOTER -->
+  <footer class="footer">
 
-            <div class="movie-grid" id="latest-movies">
+    <a class="brand" href="#">
+      <span class="brand-mark">C<span>.</span></span>
+      <span class="brand-name">
+        CINEVA
+        <small>YOUR WORLD. YOUR CINEMA.</small>
+      </span>
+    </a>
 
-                <!-- Supabase content will appear here -->
+    <p>Stories worth staying up for.</p>
 
-            </div>
+    <div>
+      <a href="#home">Home</a>
+      <a href="#categories">Genres</a>
+      <a href="mailto:hello@cineva.example">Contact</a>
+    </div>
 
-        </section>
+    <small>
+      © <span id="year"></span> CINEVA.
+      Stream only content you own or are licensed to distribute.
+    </small>
 
+  </footer>
 
-        <!-- =================================
-             ACTION
-        ================================== -->
+  <div class="toast" id="toast" role="status"></div>
 
-        <section class="content-section" id="action">
+  <script src="script.js"></script>
 
-            <div class="section-heading">
-
-                <h2>Action Movies</h2>
-
-                <a href="genre.html?genre=Action" class="view-all">
-                    View All
-                </a>
-
-            </div>
-
-            <div class="movie-row" id="action-movies"></div>
-
-        </section>
-
-
-        <!-- =================================
-             HORROR
-        ================================== -->
-
-        <section class="content-section" id="horror">
-
-            <div class="section-heading">
-
-                <h2>Horror</h2>
-
-                <a href="genre.html?genre=Horror" class="view-all">
-                    View All
-                </a>
-
-            </div>
-
-            <div class="movie-row" id="horror-movies"></div>
-
-        </section>
-
-
-        <!-- =================================
-             EROTIC
-        ================================== -->
-
-        <section class="content-section" id="erotic">
-
-            <div class="section-heading">
-
-                <h2>Erotic</h2>
-
-                <a href="genre.html?genre=Erotic" class="view-all">
-                    View All
-                </a>
-
-            </div>
-
-            <div class="movie-row" id="erotic-movies"></div>
-
-        </section>
-
-
-        <!-- =================================
-             DRAMA
-        ================================== -->
-
-        <section class="content-section" id="drama">
-
-            <div class="section-heading">
-
-                <h2>Drama</h2>
-
-                <a href="genre.html?genre=Drama" class="view-all">
-                    View All
-                </a>
-
-            </div>
-
-            <div class="movie-row" id="drama-movies"></div>
-
-        </section>
-
-
-        <!-- =================================
-             HIGH SCHOOL
-        ================================== -->
-
-        <section class="content-section" id="highschool">
-
-            <div class="section-heading">
-
-                <h2>High School</h2>
-
-                <a href="genre.html?genre=High School" class="view-all">
-                    View All
-                </a>
-
-            </div>
-
-            <div class="movie-row" id="highschool-movies"></div>
-
-        </section>
-
-
-        <!-- =================================
-             ANIMATION
-        ================================== -->
-
-        <section class="content-section" id="animation">
-
-            <div class="section-heading">
-
-                <h2>Animation</h2>
-
-                <a href="genre.html?genre=Animation" class="view-all">
-                    View All
-                </a>
-
-            </div>
-
-            <div class="movie-row" id="animation-movies"></div>
-
-        </section>
-
-
-        <!-- =================================
-             COMEDY
-        ================================== -->
-
-        <section class="content-section" id="comedy">
-
-            <div class="section-heading">
-
-                <h2>Comedy</h2>
-
-                <a href="genre.html?genre=Comedy" class="view-all">
-                    View All
-                </a>
-
-            </div>
-
-            <div class="movie-row" id="comedy-movies"></div>
-
-        </section>
-
-
-        <!-- =================================
-             FOOTER
-        ================================== -->
-
-        <footer class="main-footer">
-
-            <div class="footer-content">
-
-                <a href="index.html" class="logo">
-                    CINEVA<span>.</span>
-                </a>
-
-                <p>
-                    Your world of movies and series.
-                    Discover entertainment your way.
-                </p>
-
-                <div class="footer-links">
-
-                    <a href="index.html">Home</a>
-
-                    <a href="#latest">Latest</a>
-
-                    <a href="#genres">Categories</a>
-
-                    <a href="login.html">Account</a>
-
-                </div>
-
-                <p class="copyright">
-                    © 2026 CINEVA. All rights reserved.
-                </p>
-
-            </div>
-
-        </footer>
-
-    </main>
-    <!-- JAVASCRIPT -->
-    <script src="js/supabase.js"></script>
-    <script src="js/cards.js"></script>
-    <script src="js/home.js"></script>
-    <script src="js/app.js"></script>
 </body>
 </html>
