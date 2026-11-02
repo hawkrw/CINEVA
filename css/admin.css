@@ -1,0 +1,284 @@
+
+/* =========================================
+   CINEVA ADMIN DASHBOARD
+   ========================================= */
+
+.admin-page {
+  min-height: 100vh;
+  background: #080910;
+  color: #f5f5fa;
+  font-family: "DM Sans", sans-serif;
+}
+
+.admin-page .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(8, 9, 16, 0.95);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(15px);
+}
+
+.admin-main {
+  padding: 65px 0 90px;
+}
+
+.admin-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 35px;
+}
+
+.admin-heading h1 {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(30px, 5vw, 45px);
+  margin: 10px 0;
+}
+
+.admin-heading p {
+  color: #999aaa;
+}
+
+.eyebrow {
+  color: #e84a91;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 3px;
+}
+
+/* PANELS */
+
+.admin-panel {
+  background: #11121d;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 30px;
+}
+
+.admin-panel h2 {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 22px;
+  margin: 0 0 25px;
+}
+
+/* FORMS */
+
+.admin-panel form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-panel form label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #d8d8e2;
+  margin-top: 8px;
+}
+
+.admin-panel input:not([type="checkbox"]),
+.admin-panel select,
+.admin-panel textarea {
+  width: 100%;
+  padding: 14px 15px;
+  border-radius: 9px;
+  border: 1px solid #292a3a;
+  background: #090a12;
+  color: white;
+  outline: none;
+  font: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.admin-panel input:focus,
+.admin-panel select:focus,
+.admin-panel textarea:focus {
+  border-color: #e84a91;
+  box-shadow: 0 0 0 3px rgba(232,74,145,0.12);
+}
+
+.admin-panel input[type="file"] {
+  cursor: pointer;
+}
+
+.admin-panel input::file-selector-button {
+  background: #252637;
+  border: none;
+  padding: 9px 13px;
+  color: white;
+  border-radius: 6px;
+  margin-right: 12px;
+  cursor: pointer;
+}
+
+.admin-panel textarea {
+  resize: vertical;
+}
+
+.admin-panel button {
+  cursor: pointer;
+}
+
+/* LOGIN */
+
+#loginPanel {
+  max-width: 500px;
+  margin: 0 auto 40px;
+}
+
+#loginForm .btn {
+  margin-top: 15px;
+}
+
+/* STATS */
+
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  padding: 25px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #171827, #11121d);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.stat-card span {
+  display: block;
+  color: #a4a5b5;
+  font-size: 14px;
+}
+
+.stat-card strong {
+  display: block;
+  margin-top: 12px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 32px;
+  color: #e84a91;
+}
+
+/* CHECKBOXES */
+
+.admin-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 25px;
+  margin: 15px 0;
+}
+
+.admin-checkboxes label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+}
+
+.admin-checkboxes input {
+  accent-color: #e84a91;
+  width: 17px;
+  height: 17px;
+}
+
+/* TABLE */
+
+.admin-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 15px 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-size: 14px;
+}
+
+.admin-table th {
+  color: #e84a91;
+  font-weight: 700;
+}
+
+.admin-table td {
+  color: #d5d5df;
+}
+
+.admin-table img {
+  width: 45px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #222;
+}
+
+/* DELETE BUTTON */
+
+.admin-delete-btn {
+  padding: 8px 13px;
+  background: rgba(255,65,90,0.12);
+  color: #ff6b7d;
+  border: 1px solid rgba(255,65,90,0.3);
+  border-radius: 7px;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.admin-delete-btn:hover {
+  background: #ff415a;
+  color: white;
+}
+
+/* MESSAGES */
+
+.form-message {
+  font-size: 13px;
+  margin-top: 10px;
+  line-height: 1.6;
+}
+
+/* FOOTER */
+
+.admin-page .site-footer {
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 700px) {
+  .admin-main {
+    padding: 40px 0 60px;
+  }
+
+  .admin-panel {
+    padding: 20px;
+  }
+
+  .admin-stats {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 20px;
+  }
+
+  .admin-heading h1 {
+    font-size: 30px;
+  }
+
+  .admin-checkboxes {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
