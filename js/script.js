@@ -22,17 +22,24 @@ if (
   );
 }
 
+
+/* =========================================
+   CINEVA — PREMIUM STREAMING PLATFORM
+   Movies + Series + Supabase
+========================================= */
+
 /* 2. GLOBAL VARIABLES */
 
 let allTitles = [];
 let activeFilter = "All";
 let searchTerm = "";
 let showingMyList = false;
+let realtimeChannel = null;
 
 const $ = id => document.getElementById(id);
 
 const placeholderPoster =
-  "https://images.unsplash.com/photo-1489599849927-2ee91ashed?auto=format&fit=crop&w=600&q=80";
+  "https://placehold.co/600x900/11121c/ed3f91?text=CINEVA";
 
 /* 3. HELPER FUNCTIONS */
 
@@ -46,10 +53,29 @@ function escapeHTML(value) {
   })[char]);
 }
 
+function safeMediaURL(value) {
+  if (!value) return placeholderPoster;
+
+  try {
+    const url = new URL(value);
+
+    if (url.protocol === "https:" || url.protocol === "http:") {
+      return url.href;
+    }
+  } catch (error) {
+    console.warn("Invalid media URL:", value);
+  }
+
+  return placeholderPoster;
+}
+
 function notify(message) {
   const toast = $("toast");
 
-  if (!toast) return;
+  if (!toast) {
+    console.log(message);
+    return;
+  }
 
   toast.textContent = message;
   toast.classList.add("show");
@@ -80,16 +106,83 @@ function formatYear(year) {
   return year || "New release";
 }
 
-/* 4. MOVIE CARD DESIGN */
+function getGenreText(genre) {
+  if (Array.isArray(genre)) {
+    return genre.join(", ");
+  }
+
+  return genre || "Entertainment";
+}
+
+function genreMatches(item, genre) {
+  const genres = getGenreText(item.genre)
+    .toLowerCase()
+    .split(",")
+    .map(value => value.trim());
+
+  return genres.includes(genre.toLowerCase());
+}
+
+/* 4. NORMALIZE SUPABASE CONTENT */
+
+function normalizeContent(row, type) {
+  return {
+    id: row.id,
+    type: type,
+
+    title: row.title || "Untitled",
+
+    description: row.description || "",
+    tagline: row.tagline || "",
+
+    genre: getGenreText(row.genre),
+
+    year: row.year ||
+      (row.release_date || row.first_air_date || "")
+        .toString()
+        .slice(0, 4),
+
+    rating: Number(row.rating || 0),
+
+    vote_count: row.vote_count || 0,
+
+    poster_url: row.poster_url || "",
+    backdrop_url: row.backdrop_url || "",
+    trailer_url: row.trailer_url || "",
+
+    featured: row.featured === true,
+
+    published: row.published === true,
+
+    created_at: row.created_at || "",
+
+    original_language: row.original_language || "",
+
+    duration: row.duration || null,
+
+    slug: row.slug || "",
+
+    tmdb_id: row.tmdb_id || null
+  };
+}
+
+/* 5. MOVIE CARD DESIGN */
 
 function createMovieCard(movie) {
+  const poster = safeMediaURL(movie.poster_url);
 
-  const poster = movie.poster_url || placeholderPoster;
+  const watchURL =
+    `watch.html?type=${encodeURIComponent(movie.type.toLowerCase())}` +
+    `&id=${encodeURIComponent(movie.id)}`;
+
+  const badge = movie.featured
+    ? '<span class="poster-badge">FEATURED</span>'
+    : '<span class="poster-badge">CINEVA</span>';
 
   return `
     <article class="movie-card">
 
-      <a href="watch.html?id=${encodeURIComponent(movie.id)}">
+      <a href="${escapeHTML(watchURL)}">
 
         <div class="poster-wrap">
 
@@ -100,12 +193,10 @@ function createMovieCard(movie) {
             onerror="this.onerror=null;this.src='${placeholderPoster}'"
           >
 
-          ${movie.featured
-            ? '<span class="poster-badge">FEATURED</span>'
-            : '<span class="poster-badge">CINEVA</span>'}
+          ${badge}
 
           <span class="poster-type">
-            ${escapeHTML(movie.type || "Movie")}
+            ${escapeHTML(movie.type)}
           </span>
 
           <span class="card-play">▶</span>
@@ -121,7 +212,7 @@ function createMovieCard(movie) {
       <p class="movie-meta">
         ${escapeHTML(formatYear(movie.year))}
         &nbsp; • &nbsp;
-        ${escapeHTML(movie.genre || "Entertainment")}
+        ${escapeHTML(movie.genre)}
         ${movie.rating
           ? ` &nbsp; • &nbsp; ★ ${escapeHTML(movie.rating)}`
           : ""}
@@ -131,74 +222,61 @@ function createMovieCard(movie) {
   `;
 }
 
-/* 5. DISPLAY MOVIES */
+/* 6. DISPLAY CONTENT GRIDS */
 
-function renderGrid(elementId, movies) {
-
+function renderGrid(elementId, items) {
   const container = $(elementId);
 
   if (!container) return;
 
-  if (!movies.length) {
+  if (!items.length) {
     container.innerHTML = `
       <div class="loading-state">
-        No titles available yet.
+        No published content available yet.
       </div>
     `;
     return;
   }
 
-  container.innerHTML = movies
+  container.innerHTML = items
     .map(createMovieCard)
     .join("");
 }
 
-/* 6. HOMEPAGE CONTENT */
+/* 7. HOMEPAGE CONTENT */
 
 function displayHomepage() {
-
-  const latest = [...allTitles]
-    .sort((a, b) =>
-      new Date(b.created_at || 0) -
-      new Date(a.created_at || 0)
-    );
-
-  const movies = latest.filter(
-    item => item.type?.toLowerCase() === "movie"
+  const latest = [...allTitles].sort((a, b) =>
+    new Date(b.created_at || 0) -
+    new Date(a.created_at || 0)
   );
 
-  const series = latest.filter(
-    item => item.type?.toLowerCase() === "series"
+  const movies = latest.filter(item =>
+    item.type === "Movie"
   );
 
-  const featured = latest.find(
-    item => item.featured
+  const series = latest.filter(item =>
+    item.type === "Series"
   );
 
-  renderGrid(
-    "latestGrid",
-    latest.slice(0, 5)
+  const featured = latest.find(item =>
+    item.featured
   );
 
-  renderGrid(
-    "moviesGrid",
-    movies.slice(0, 5)
-  );
+  renderGrid("latestGrid", latest.slice(0, 10));
 
-  renderGrid(
-    "seriesGrid",
-    series.slice(0, 5)
-  );
+  renderGrid("moviesGrid", movies.slice(0, 10));
+
+  renderGrid("seriesGrid", series.slice(0, 10));
 
   updateHero(featured || latest[0]);
 
   displayAllContent();
 }
 
-/* 7. FEATURED HERO */
+/* 8. FEATURED HERO */
 
 function updateHero(movie) {
-
   if (!movie) return;
 
   const title = $("heroTitle");
@@ -218,48 +296,53 @@ function updateHero(movie) {
 
   if (meta) {
     meta.textContent =
-      `${movie.genre || "FEATURED"} • ${movie.year || "CINEVA"}`;
+      `${movie.type} • ${movie.genre} • ${movie.year || "CINEVA"}`;
   }
 
   if (backdrop) {
+    const image = safeMediaURL(
+      movie.backdrop_url || movie.poster_url
+    );
+
     backdrop.style.backgroundImage = `
       linear-gradient(90deg,#080910 0%,rgba(8,9,16,.85) 32%,rgba(8,9,16,.2) 75%),
       linear-gradient(0deg,#080910 0%,transparent 35%),
-      url("${movie.backdrop_url || movie.poster_url || placeholderPoster}")
+      url("${image}")
     `;
   }
 
   if (watch) {
     watch.href =
-      `watch.html?id=${encodeURIComponent(movie.id)}`;
+      `watch.html?type=${encodeURIComponent(movie.type.toLowerCase())}` +
+      `&id=${encodeURIComponent(movie.id)}`;
   }
 }
 
-/* 8. ALL CONTENT AND FILTERS */
+/* 9. SEARCH AND CONTENT FILTERS */
 
 function displayAllContent() {
-
   let filtered = [...allTitles];
 
   if (activeFilter !== "All") {
-    filtered = filtered.filter(movie =>
-      movie.type?.toLowerCase() === activeFilter.toLowerCase()
+    filtered = filtered.filter(item =>
+      item.type.toLowerCase() === activeFilter.toLowerCase()
     );
   }
 
   if (showingMyList) {
     const saved = getMyList().map(String);
 
-    filtered = filtered.filter(movie =>
-      saved.includes(String(movie.id))
+    filtered = filtered.filter(item =>
+      saved.includes(String(item.id)) ||
+      saved.includes(`${item.type.toLowerCase()}:${item.id}`)
     );
   }
 
   if (searchTerm) {
-    filtered = filtered.filter(movie =>
-      movie.title?.toLowerCase().includes(searchTerm) ||
-      movie.genre?.toLowerCase().includes(searchTerm) ||
-      movie.description?.toLowerCase().includes(searchTerm)
+    filtered = filtered.filter(item =>
+      item.title.toLowerCase().includes(searchTerm) ||
+      item.genre.toLowerCase().includes(searchTerm) ||
+      item.description.toLowerCase().includes(searchTerm)
     );
   }
 
@@ -273,10 +356,9 @@ function displayAllContent() {
   }
 }
 
-/* 9. GENRE FILTER */
+/* 10. GENRE FILTER */
 
 function filterByGenre(genre) {
-
   searchTerm = "";
   showingMyList = false;
   activeFilter = "All";
@@ -297,8 +379,8 @@ function filterByGenre(genre) {
     allButton.classList.add("selected");
   }
 
-  const results = allTitles.filter(movie =>
-    movie.genre?.toLowerCase() === genre.toLowerCase()
+  const results = allTitles.filter(item =>
+    genreMatches(item, genre)
   );
 
   renderGrid("allGrid", results);
@@ -315,16 +397,14 @@ function filterByGenre(genre) {
   });
 }
 
-/* 10. SEARCH */
+/* 11. SEARCH */
 
 function initializeSearch() {
-
   const search = $("searchInput");
 
   if (!search) return;
 
   search.addEventListener("input", event => {
-
     searchTerm = event.target.value
       .trim()
       .toLowerCase();
@@ -332,66 +412,46 @@ function initializeSearch() {
     showingMyList = false;
 
     displayAllContent();
-
-    $("all-content")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
-
   });
 }
 
-/* 11. FILTER BUTTONS */
+/* 12. FILTER BUTTONS */
 
 function initializeFilters() {
-
   document.querySelectorAll(".filter-chip").forEach(button => {
-
     button.addEventListener("click", () => {
-
       document.querySelectorAll(".filter-chip")
         .forEach(item => item.classList.remove("selected"));
 
       button.classList.add("selected");
 
-      activeFilter = button.dataset.filter;
+      activeFilter = button.dataset.filter || "All";
 
       showingMyList = false;
 
       displayAllContent();
-
     });
-
   });
-
 }
 
-/* 12. GENRE BUTTONS */
+/* 13. GENRE BUTTONS */
 
 function initializeGenres() {
-
   document.querySelectorAll(".genre-tile").forEach(button => {
-
     button.addEventListener("click", () => {
-
       filterByGenre(button.dataset.genre);
-
     });
-
   });
-
 }
 
-/* 13. MY LIST */
+/* 14. MY LIST */
 
 function initializeMyList() {
-
   const button = $("myListButton");
 
   if (!button) return;
 
   button.addEventListener("click", () => {
-
     showingMyList = !showingMyList;
 
     activeFilter = "All";
@@ -408,7 +468,9 @@ function initializeMyList() {
       '.filter-chip[data-filter="All"]'
     );
 
-    if (allButton) allButton.classList.add("selected");
+    if (allButton) {
+      allButton.classList.add("selected");
+    }
 
     displayAllContent();
 
@@ -421,15 +483,12 @@ function initializeMyList() {
         ? "Showing your saved titles"
         : "Showing all titles"
     );
-
   });
-
 }
 
-/* 14. MOBILE MENU */
+/* 15. MOBILE MENU */
 
 function initializeMobileMenu() {
-
   const button = $("mobileMenu");
   const nav = $("mainNav");
 
@@ -444,141 +503,221 @@ function initializeMobileMenu() {
       nav.classList.remove("open");
     });
   });
-
 }
 
-/* 15. SUPABASE DATABASE */
+/* 16. LOAD MOVIES FROM SUPABASE */
+
+async function fetchMovies() {
+  const { data, error } = await db
+    .from("movies")
+    .select("*")
+    .eq("published", true)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  return (data || []).map(item =>
+    normalizeContent(item, "Movie")
+  );
+}
+
+/* 17. LOAD SERIES FROM SUPABASE */
+
+async function fetchSeries() {
+  const { data, error } = await db
+    .from("series")
+    .select("*")
+    .eq("published", true)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  return (data || []).map(item =>
+    normalizeContent(item, "Series")
+  );
+}
+
+/* 18. LOAD ALL PUBLISHED CONTENT */
 
 async function loadTitles() {
-
   if (!db) {
-
-    notify("Connect your Supabase project first.");
-
-    const message = `
-      <div class="loading-state">
-        CINEVA is waiting for its Supabase connection.
-        <br><br>
-        Add your Supabase URL and publishable key in script.js.
-      </div>
-    `;
-
-    ["latestGrid", "moviesGrid", "seriesGrid", "allGrid"]
-      .forEach(id => {
-        if ($(id)) $(id).innerHTML = message;
-      });
-
+    notify("Supabase connection is missing.");
     return;
   }
 
+  const grids = [
+    "latestGrid",
+    "moviesGrid",
+    "seriesGrid",
+    "allGrid"
+  ];
+
+  grids.forEach(id => {
+    if ($(id)) {
+      $(id).innerHTML = `
+        <div class="loading-state">
+          Loading CINEVA content...
+        </div>
+      `;
+    }
+  });
+
   try {
+    const [moviesResult, seriesResult] =
+      await Promise.allSettled([
+        fetchMovies(),
+        fetchSeries()
+      ]);
 
-    const { data, error } = await db
-      .from("titles")
-      .select("*")
-      .eq("published", true)
-      .order("created_at", { ascending: false });
+    const movies =
+      moviesResult.status === "fulfilled"
+        ? moviesResult.value
+        : [];
 
-    if (error) throw error;
+    const series =
+      seriesResult.status === "fulfilled"
+        ? seriesResult.value
+        : [];
 
-    allTitles = data || [];
+    if (moviesResult.status === "rejected") {
+      console.error(
+        "CINEVA movies loading error:",
+        moviesResult.reason
+      );
+    }
+
+    if (seriesResult.status === "rejected") {
+      console.error(
+        "CINEVA series loading error:",
+        seriesResult.reason
+      );
+    }
+
+    allTitles = [...movies, ...series];
 
     displayHomepage();
 
-  } catch (error) {
+    if (!allTitles.length) {
+      notify("No published movies or series found.");
+    }
 
+  } catch (error) {
     console.error("CINEVA database error:", error);
 
-    const message = `
-      <div class="loading-state">
-        Unable to load titles.
-        <br><br>
-        Check your Supabase connection and database policies.
-      </div>
-    `;
+    grids.forEach(id => {
+      if ($(id)) {
+        $(id).innerHTML = `
+          <div class="loading-state">
+            Unable to load CINEVA content.
+            Please check your Supabase database and policies.
+          </div>
+        `;
+      }
+    });
 
-    ["latestGrid", "moviesGrid", "seriesGrid", "allGrid"]
-      .forEach(id => {
-        if ($(id)) $(id).innerHTML = message;
-      });
-
+    notify("Could not load content.");
   }
-
 }
 
-/* 16. REAL-TIME UPDATES */
+/* 19. REAL-TIME DATABASE UPDATES */
 
 function enableRealtime() {
-
   if (!db) return;
 
-  db.channel("cineva-titles")
+  if (realtimeChannel) {
+    db.removeChannel(realtimeChannel);
+  }
+
+  realtimeChannel = db
+    .channel("cineva-content-updates")
+
     .on(
       "postgres_changes",
       {
         event: "*",
         schema: "public",
-        table: "titles"
+        table: "movies"
       },
-      () => {
-        loadTitles();
-      }
+      () => loadTitles()
     )
-    .subscribe();
 
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "series"
+      },
+      () => loadTitles()
+    )
+
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "movie_parts"
+      },
+      () => loadTitles()
+    )
+
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "episodes"
+      },
+      () => loadTitles()
+    )
+
+    .subscribe(status => {
+      console.log("CINEVA realtime status:", status);
+    });
 }
 
-/* 17. NEWSLETTER */
+/* 20. NEWSLETTER */
 
 function initializeNewsletter() {
-
   const form = $("newsletterForm");
 
   if (!form) return;
 
   form.addEventListener("submit", event => {
-
     event.preventDefault();
 
-    notify("Newsletter registration will be available soon.");
+    notify("Newsletter registration coming soon.");
 
     form.reset();
-
   });
-
 }
 
-/* 18. FOOTER YEAR */
+/* 21. FOOTER YEAR */
 
 function initializeFooter() {
-
   const year = $("year");
 
   if (year) {
     year.textContent = new Date().getFullYear();
   }
-
 }
 
-/* 19. START CINEVA */
+/* 22. START CINEVA */
 
 document.addEventListener("DOMContentLoaded", async () => {
-
   initializeSearch();
-
   initializeFilters();
-
   initializeGenres();
-
   initializeMyList();
-
   initializeMobileMenu();
-
   initializeNewsletter();
-
   initializeFooter();
 
   await loadTitles();
+
+  enableRealtime();
+});
+
 
   enableRealtime();
 
