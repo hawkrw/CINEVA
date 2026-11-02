@@ -385,6 +385,330 @@ function escapeHTML(value) {
 }
 
 
+// ==========================================
+// 16. CINEVA TMDB IMPORT INTEGRATION
+// ==========================================
+
+function createTMDBPanel() {
+  if (document.getElementById("cinevaTMDBPanel")) return;
+
+  const panel = document.createElement("section");
+
+  panel.id = "cinevaTMDBPanel";
+  panel.className = "cineva-tmdb-panel";
+
+  panel.innerHTML = `
+    <div class="tmdb-panel-heading">
+      <div>
+        <span class="tmdb-label">CONTENT DISCOVERY</span>
+        <h2>Import from TMDB</h2>
+        <p>
+          Find a movie or series and import its information
+          directly into your CINEVA database.
+        </p>
+      </div>
+    </div>
+
+    <div class="tmdb-search-controls">
+
+      <select id="tmdbMediaType">
+        <option value="movie">Movies</option>
+        <option value="tv">TV Series</option>
+      </select>
+
+      <input
+        type="search"
+        id="tmdbSearchInput"
+        placeholder="Search movie or series..."
+      >
+
+      <button type="button" id="tmdbSearchBtn">
+        Search TMDB
+      </button>
+
+    </div>
+
+    <div id="tmdbStatus" aria-live="polite"></div>
+
+    <div id="tmdbResults" class="tmdb-results"></div>
+  `;
+
+  dashboardPanel.prepend(panel);
+
+  document
+    .getElementById("tmdbSearchBtn")
+    .addEventListener("click", searchCINEVATMDB);
+
+  document
+    .getElementById("tmdbSearchInput")
+    .addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        searchCINEVATMDB();
+      }
+    });
+}
+
+
+// ==========================================
+// TMDB STATUS MESSAGE
+// ==========================================
+
+function tmdbMessage(message, error = false) {
+  const status = document.getElementById("tmdbStatus");
+
+  if (!status) return;
+
+  status.textContent = message;
+
+  status.style.color = error
+    ? "#ff6b6b"
+    : "#35d07f";
+}
+
+
+// ==========================================
+// SEARCH TMDB
+// ==========================================
+
+async function searchCINEVATMDB() {
+  const query = document
+    .getElementById("tmdbSearchInput")
+    .value.trim();
+
+  const mediaType = document
+    .getElementById("tmdbMediaType")
+    .value;
+
+  const resultsContainer =
+    document.getElementById("tmdbResults");
+
+  const searchButton =
+    document.getElementById("tmdbSearchBtn");
+
+  if (!query) {
+    tmdbMessage("Please enter a movie or series name.", true);
+    return;
+  }
+
+  searchButton.disabled = true;
+  searchButton.textContent = "Searching...";
+
+  resultsContainer.innerHTML = "";
+
+  tmdbMessage("Searching TMDB...");
+
+  try {
+    const { data, error } =
+      await supabaseClient.functions.invoke("tmdb-api", {
+        body: {
+          action: "search",
+          query,
+          mediaType
+        }
+      });
+
+    if (error) throw error;
+
+    if (!data?.success) {
+      throw new Error(data?.error || "TMDB search failed.");
+    }
+
+    displayCINEVATMDBResults(data.results || []);
+
+    tmdbMessage(
+      `${data.results.length} result(s) found.`
+    );
+
+  } catch (error) {
+    console.error("TMDB search error:", error);
+
+    tmdbMessage(
+      error.message || "Unable to search TMDB.",
+      true
+    );
+
+  } finally {
+    searchButton.disabled = false;
+    searchButton.textContent = "Search TMDB";
+  }
+}
+
+
+// ==========================================
+// DISPLAY TMDB SEARCH RESULTS
+// ==========================================
+
+function displayCINEVATMDBResults(results) {
+  const container =
+    document.getElementById("tmdbResults");
+
+  if (!results.length) {
+    container.innerHTML = `
+      <div class="tmdb-no-results">
+        <h3>No results found</h3>
+        <p>Try another title.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = results.map(item => `
+    <article class="tmdb-result-card">
+
+      ${
+        item.poster
+          ? `<img
+              src="${escapeHTML(item.poster)}"
+              alt="${escapeHTML(item.title)}"
+              loading="lazy"
+            >`
+          : `<div class="tmdb-no-poster">No poster</div>`
+      }
+
+      <div class="tmdb-result-details">
+
+        <h3>${escapeHTML(item.title)}</h3>
+
+        <p>
+          ${escapeHTML(item.releaseDate || "Release date unavailable")}
+        </p>
+
+        <p class="tmdb-rating">
+          ★ ${Number(item.rating || 0).toFixed(1)} / 10
+        </p>
+
+        <p class="tmdb-description">
+          ${escapeHTML(item.overview || "No description available.")}
+        </p>
+
+        <button
+          type="button"
+          class="tmdb-import-button"
+          data-tmdb-id="${Number(item.id)}"
+          data-media-type="${item.mediaType === "tv" ? "tv" : "movie"}"
+        >
+          Import to CINEVA
+        </button>
+
+      </div>
+
+    </article>
+  `).join("");
+
+  container
+    .querySelectorAll(".tmdb-import-button")
+    .forEach(button => {
+
+      button.addEventListener("click", async () => {
+
+        const tmdbId = Number(button.dataset.tmdbId);
+        const mediaType = button.dataset.mediaType;
+
+        await importCINEVATMDB(
+          tmdbId,
+          mediaType,
+          button
+        );
+
+      });
+
+    });
+}
+
+
+// ==========================================
+// IMPORT TMDB CONTENT INTO SUPABASE
+// ==========================================
+
+async function importCINEVATMDB(
+  tmdbId,
+  mediaType,
+  button
+) {
+
+  if (!currentAdmin) {
+    tmdbMessage("Admin login required.", true);
+    return;
+  }
+
+  const originalText = button.textContent;
+
+  button.disabled = true;
+  button.textContent = "Importing...";
+
+  tmdbMessage("Downloading artwork and saving metadata...");
+
+  try {
+
+    const { data, error } =
+      await supabaseClient.functions.invoke("tmdb-api", {
+        body: {
+          action: "import",
+          tmdbId,
+          mediaType
+        }
+      });
+
+    if (error) throw error;
+
+    if (!data?.success) {
+
+      if (data?.alreadyImported) {
+        throw new Error("This title is already imported.");
+      }
+
+      throw new Error(
+        data?.error || "Import failed."
+      );
+    }
+
+    button.textContent = "Imported ✓";
+    button.classList.add("imported");
+
+    tmdbMessage(
+      `${data.title.title} successfully saved in Supabase!`
+    );
+
+    // Refresh the existing admin content table.
+    await loadAdminTitles();
+
+  } catch (error) {
+
+    console.error("TMDB import error:", error);
+
+    button.disabled = false;
+    button.textContent = originalText;
+
+    tmdbMessage(
+      error.message || "Unable to import this title.",
+      true
+    );
+
+  }
+
+}
+
+
+// ==========================================
+// INITIALIZE TMDB PANEL
+// ==========================================
+
+// Add this function call when dashboard opens.
+
+const originalShowDashboard = showDashboard;
+
+showDashboard = function () {
+  originalShowDashboard();
+
+  createTMDBPanel();
+};
+
+
+// ==========================================
+// END TMDB INTEGRATION
+// ==========================================
+
 // 16. AUTH SESSION LISTENER
 
 supabaseClient.auth.onAuthStateChange(() => {
