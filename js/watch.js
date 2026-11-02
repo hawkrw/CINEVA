@@ -1,7 +1,8 @@
 
-/* =====================================
-   CINEVA - WATCH PAGE
-   ===================================== */
+/* =========================================
+   CINEVA - SECURE WATCH PAGE
+   Private Supabase Video Playback
+   ========================================= */
 
 // 1. SUPABASE CONFIGURATION
 const SUPABASE_URL = "https://ciifhscwcaslnkwtgoyp.supabase.co";
@@ -12,7 +13,12 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_ANON_KEY
 );
 
+const VIDEO_BUCKET = "cineva-videos";
+const SIGNED_URL_DURATION = 3600;
+
+
 // 2. PAGE ELEMENTS
+
 const videoPlayer = document.getElementById("videoPlayer");
 const watchTitle = document.getElementById("watchTitle");
 const watchMeta = document.getElementById("watchMeta");
@@ -24,13 +30,30 @@ const relatedTitles = document.getElementById("relatedTitles");
 document.getElementById("footerYear").textContent =
   new Date().getFullYear();
 
-// 3. GET TITLE ID FROM URL
+
+// 3. GET TITLE ID
+
 const params = new URLSearchParams(window.location.search);
 const titleId = params.get("id");
 
 let currentTitle = null;
 
-// 4. LOAD SELECTED TITLE
+
+// 4. HTML ESCAPING
+
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  })[character]);
+}
+
+
+// 5. LOAD SELECTED TITLE
+
 async function loadTitle() {
   if (!titleId) {
     showError("No movie or series was selected.");
@@ -50,23 +73,26 @@ async function loadTitle() {
     currentTitle = data;
 
     displayTitle(data);
+    await loadVideo(data.video_url);
     loadRelatedTitles(data);
     updateWatchListButton(data.id);
 
   } catch (error) {
-    console.error("CINEVA loading error:", error);
+    console.error("CINEVA error:", error);
     showError("This movie or series could not be found.");
   }
 }
 
-// 5. DISPLAY TITLE INFORMATION
+
+// 6. DISPLAY TITLE DETAILS
+
 function displayTitle(title) {
   document.title = `${title.title} | CINEVA`;
 
   watchTitle.textContent = title.title || "Untitled";
 
   watchMeta.innerHTML = `
-    <span>${escapeHTML(title.year || "Year unknown")}</span>
+    <span>${escapeHTML(title.year || "Unknown year")}</span>
     <span>${escapeHTML(title.type || "Movie")}</span>
     <span>★ ${escapeHTML(title.rating || "N/A")}</span>
     <span>${escapeHTML(title.duration || "")}</span>
@@ -76,33 +102,77 @@ function displayTitle(title) {
     title.description || "No description available.";
 
   watchGenres.textContent = title.genre || "";
+}
 
-  // VIDEO PLAYER
-  if (title.video_url) {
+
+// 7. PRIVATE VIDEO PLAYBACK
+
+async function loadVideo(videoPath) {
+  if (!videoPath) {
+    showVideoMessage("Video is not available yet.");
+    return;
+  }
+
+  try {
+    const { data, error } = await supabaseClient.storage
+      .from(VIDEO_BUCKET)
+      .createSignedUrl(videoPath, SIGNED_URL_DURATION);
+
+    if (error) throw error;
+
+    if (!data?.signedUrl) {
+      throw new Error("Could not generate video playback URL.");
+    }
+
     const video = document.createElement("video");
 
     video.controls = true;
-    video.autoplay = false;
     video.playsInline = true;
     video.preload = "metadata";
-    video.poster = title.backdrop_url || title.poster_url || "";
+    video.poster = currentTitle.backdrop_url ||
+      currentTitle.poster_url || "";
 
     const source = document.createElement("source");
-    source.src = title.video_url;
+
+    source.src = data.signedUrl;
+    source.type = "video/mp4";
 
     video.appendChild(source);
+
+    video.addEventListener("error", () => {
+      showVideoMessage(
+        "Video playback failed. Please refresh and try again."
+      );
+    });
+
     videoPlayer.replaceChildren(video);
-  } else {
-    videoPlayer.innerHTML = `
-      <div class="video-placeholder">
-        <div class="play-icon">▶</div>
-        <p>Video is not available yet.</p>
-      </div>
-    `;
+
+  } catch (error) {
+    console.error("Video playback error:", error);
+
+    showVideoMessage(
+      "Unable to load this video. Please try again later."
+    );
   }
 }
 
-// 6. LOAD RELATED TITLES
+
+// 8. VIDEO MESSAGE
+
+function showVideoMessage(message) {
+  const container = document.createElement("div");
+  container.className = "video-placeholder";
+
+  const paragraph = document.createElement("p");
+  paragraph.textContent = message;
+
+  container.appendChild(paragraph);
+  videoPlayer.replaceChildren(container);
+}
+
+
+// 9. RELATED CONTENT
+
 async function loadRelatedTitles(title) {
   const { data, error } = await supabaseClient
     .from("titles")
@@ -112,45 +182,59 @@ async function loadRelatedTitles(title) {
     .limit(6);
 
   if (error) {
-    console.error("Related titles error:", error);
-    relatedTitles.textContent = "No recommendations available.";
+    console.error(error);
+    relatedTitles.textContent = "Recommendations unavailable.";
     return;
   }
 
-  if (!data || data.length === 0) {
+  if (!data?.length) {
     relatedTitles.textContent = "No recommendations available.";
     return;
   }
 
   relatedTitles.innerHTML = data.map(item => `
-    <a class="related-card" href="watch.html?id=${encodeURIComponent(item.id)}">
+    <a class="related-card"
+       href="watch.html?id=${encodeURIComponent(item.id)}">
+
       <img
         src="${escapeHTML(item.poster_url || "")}"
         alt="${escapeHTML(item.title)}"
         loading="lazy"
-        onerror="this.style.display='none'"
       >
+
       <div>
         <h3>${escapeHTML(item.title)}</h3>
-        <p>${escapeHTML(item.year || "")} · ${escapeHTML(item.type || "")}</p>
+        <p>
+          ${escapeHTML(item.year || "")}
+          ·
+          ${escapeHTML(item.type || "")}
+        </p>
       </div>
+
     </a>
   `).join("");
 }
 
-// 7. MY LIST
+
+// 10. MY LIST
+
 function getMyList() {
   try {
-    return JSON.parse(localStorage.getItem("cinevaMyList")) || [];
+    return JSON.parse(
+      localStorage.getItem("cinevaMyList")
+    ) || [];
   } catch {
     return [];
   }
 }
 
 function updateWatchListButton(id) {
-  const saved = getMyList().some(item => String(item) === String(id));
+  const saved = getMyList().some(
+    item => String(item) === String(id)
+  );
 
-  watchListBtn.textContent = saved ? "✓ Added to My List" : "+ My List";
+  watchListBtn.textContent =
+    saved ? "✓ Added to My List" : "+ My List";
 }
 
 watchListBtn.addEventListener("click", () => {
@@ -170,35 +254,27 @@ watchListBtn.addEventListener("click", () => {
     list.push(currentTitle.id);
   }
 
-  localStorage.setItem("cinevaMyList", JSON.stringify(list));
+  localStorage.setItem(
+    "cinevaMyList",
+    JSON.stringify(list)
+  );
+
   updateWatchListButton(currentTitle.id);
 });
 
-// 8. ERROR DISPLAY
+
+// 11. ERROR DISPLAY
+
 function showError(message) {
   watchTitle.textContent = "Content unavailable";
   watchDescription.textContent = message;
 
-  videoPlayer.innerHTML = `
-    <div class="video-placeholder">
-      <p>${escapeHTML(message)}</p>
-      <a href="index.html">Return to Home</a>
-    </div>
-  `;
+  showVideoMessage(message);
 
   relatedTitles.textContent = "";
 }
 
-// 9. BASIC HTML ESCAPING
-function escapeHTML(value) {
-  return String(value ?? "").replace(/[&<>"']/g, character => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#039;"
-  })[character]);
-}
 
-// 10. START
+// 12. START
+
 loadTitle();
