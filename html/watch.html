@@ -1,0 +1,103 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Watch | CINEVA</title>
+  <meta name="description" content="Watch movies and series on CINEVA.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="watch-page">
+
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="index.html" class="logo">CINEVA<span>.</span></a>
+
+      <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a href="index.html#latest">Latest</a>
+        <a href="index.html#movies">Movies</a>
+        <a href="index.html#series">Series</a>
+      </nav>
+
+      <a href="index.html" class="btn btn-outline">← Back Home</a>
+    </div>
+  </header>
+
+  <main class="watch-main">
+    <div class="container">
+
+      <a href="index.html" class="back-link">← Back to CINEVA</a>
+
+      <section class="watch-layout">
+
+        <div class="watch-content">
+
+          <div class="video-player" id="videoPlayer">
+            <div class="video-placeholder">
+              <div class="play-icon">▶</div>
+              <p>Loading video...</p>
+            </div>
+          </div>
+
+          <div class="watch-details">
+            <div class="watch-heading">
+              <div>
+                <span class="eyebrow">NOW WATCHING</span>
+                <h1 id="watchTitle">Loading title...</h1>
+              </div>
+
+              <button class="btn btn-outline" id="watchListBtn" type="button">
+                + My List
+              </button>
+            </div>
+
+            <div class="movie-meta" id="watchMeta">
+              <span>Loading details...</span>
+            </div>
+
+            <p class="watch-description" id="watchDescription">
+              Please wait while we load the movie information.
+            </p>
+
+            <div class="watch-genres" id="watchGenres"></div>
+          </div>
+
+          <section class="episode-section" id="episodeSection" hidden>
+            <h2>Episodes</h2>
+            <div id="episodeList"></div>
+          </section>
+
+        </div>
+
+        <aside class="watch-sidebar">
+          <h2>More to Watch</h2>
+          <div id="relatedTitles" class="related-list">
+            <p>Loading recommendations...</p>
+          </div>
+        </aside>
+
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-bottom">
+      <a href="index.html" class="logo">CINEVA<span>.</span></a>
+      <p>© <span id="footerYear"></span> CINEVA. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/watch.js"></script>
+
+</body>
+</html>
