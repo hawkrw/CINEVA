@@ -1,0 +1,113 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>My List | CINEVA</title>
+  <meta name="description" content="Your saved movies and series on CINEVA.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <header class="site-header">
+    <div class="container nav-container">
+
+      <a href="index.html" class="logo">
+        CINEVA<span>.</span>
+      </a>
+
+      <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a href="index.html#latest">Latest</a>
+        <a href="index.html#movies">Movies</a>
+        <a href="index.html#series">Series</a>
+        <a href="my-list.html" class="active">My List</a>
+      </nav>
+
+      <a href="index.html" class="btn btn-outline">
+        ← Back Home
+      </a>
+
+    </div>
+  </header>
+
+  <main class="my-list-main">
+    <div class="container">
+
+      <section class="my-list-heading">
+        <span class="eyebrow">YOUR COLLECTION</span>
+
+        <h1>My List<span>.</span></h1>
+
+        <p>
+          Your favorite movies and series, all in one place.
+        </p>
+
+        <div class="my-list-count">
+          <span id="savedCount">0</span>
+          <span>Saved titles</span>
+        </div>
+      </section>
+
+      <section class="my-list-section">
+
+        <div class="section-heading">
+          <div>
+            <h2>Saved Content</h2>
+            <p>Continue exploring your collection.</p>
+          </div>
+        </div>
+
+        <div id="myListGrid" class="movie-grid">
+
+          <div class="empty-list">
+            <div class="empty-icon">♡</div>
+
+            <h3>Your list is empty</h3>
+
+            <p>
+              Explore CINEVA and save movies or series
+              you want to watch later.
+            </p>
+
+            <a href="index.html" class="btn btn-primary">
+              Explore Movies
+            </a>
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-bottom">
+
+      <a href="index.html" class="logo">
+        CINEVA<span>.</span>
+      </a>
+
+      <p>
+        © <span id="footerYear"></span> CINEVA.
+        All rights reserved.
+      </p>
+
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/my-list.js"></script>
+
+</body>
+</html>
